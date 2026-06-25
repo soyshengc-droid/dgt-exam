@@ -154,14 +154,12 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--
 <div id="page-login" class="page active">
   <div class="login-container">
     <h2>☁️ DGT Permiso B</h2>
-    <p style="color:var(--text2);margin-bottom:20px">Inicia sesión para sincronizar tu progreso</p>
-    <input type="email" id="login-email" placeholder="Email" autocomplete="email">
-    <input type="password" id="login-password" placeholder="Contraseña" autocomplete="current-password">
-    <button class="btn btn-primary" onclick="login()" style="width:100%;justify-content:center;padding:12px;margin-top:8px">Iniciar Sesión</button>
-    <p style="margin-top:16px;font-size:12px;color:var(--text2)">
-      ¿No tienes cuenta? <a href="#" onclick="signup()" style="color:var(--primary)">Regístrate</a>
-    </p>
-    <p id="login-msg" style="margin-top:8px;font-size:12px;color:var(--danger)"></p>
+    <p style="color:var(--text2);margin-bottom:20px">Accede para sincronizar tu progreso en la nube</p>
+    <input type="text" id="login-email" placeholder="Usuario" autocomplete="username" value="sheng">
+    <input type="password" id="login-password" placeholder="Contraseña" autocomplete="current-password" value="dgt2026">
+    <button class="btn btn-primary" onclick="login()" style="width:100%;justify-content:center;padding:12px;margin-top:8px;font-size:15px">☁️ Entrar</button>
+    <p id="login-msg" style="margin-top:10px;font-size:12px;color:var(--danger)"></p>
+    <p style="margin-top:14px;font-size:10px;color:var(--text2)">Usuario: <b>sheng</b> · Contraseña: <b>dgt2026</b></p>
   </div>
 </div>
 
@@ -281,30 +279,15 @@ function initSupabase() {
 
 // ==================== AUTH ====================
 async function login() {
-  const email = document.getElementById('login-email').value.trim();
+  const username = document.getElementById('login-email').value.trim();
   const password = document.getElementById('login-password').value;
-  if (!email || !password) { showMsg('Completa email y contraseña', false); return; }
-  showMsg('Iniciando sesión...', true);
+  if (!username || !password) { showMsg('Completa usuario y contraseña', false); return; }
+  showMsg('Conectando...', true);
+  // Username → email for Supabase Auth
+  const email = username.includes('@') ? username : username + '@dgt.com';
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) { showMsg('Error: ' + translateError(error.message), false); return; }
+  if (error) { showMsg('Usuario o contraseña incorrectos', false); return; }
   if (data?.session) { currentUser = data.session.user; afterLogin(); }
-}
-async function signup() {
-  const email = document.getElementById('login-email').value.trim();
-  const password = document.getElementById('login-password').value;
-  if (!email || !password) { showMsg('Completa email y contraseña', false); return; }
-  if (password.length < 6) { showMsg('Contraseña: mínimo 6 caracteres', false); return; }
-  showMsg('Creando cuenta...', true);
-  const { data, error } = await supabase.auth.signUp({ email, password });
-  if (error) { showMsg('Error: ' + translateError(error.message), false); return; }
-  if (data?.session) {
-    // Auto-confirm enabled — logged in immediately
-    currentUser = data.session.user;
-    afterLogin();
-  } else {
-    // Email confirmation required
-    showMsg('✅ Cuenta creada. Ahora haz clic en "Iniciar Sesión" (ya puedes entrar)', true);
-  }
 }
 async function logout() {
   await supabase.auth.signOut();
@@ -317,12 +300,6 @@ function showMsg(msg, ok) {
   el.textContent = msg;
   el.style.color = ok ? 'var(--success)' : 'var(--danger)';
   el.style.fontWeight = '600';
-}
-function translateError(msg) {
-  if (msg.includes('Invalid login')) return 'Email o contraseña incorrectos';
-  if (msg.includes('already registered')) return 'Este email ya está registrado';
-  if (msg.includes('password')) return 'Contraseña muy corta';
-  return msg;
 }
 
 function afterLogin() {

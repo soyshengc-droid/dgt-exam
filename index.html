@@ -333,7 +333,7 @@ function startRepaso() {
   if (!entries.length) { alert('No hay fallos'); return; }
   stopTimer(); isRepaso = true; qIndex = 0; answers = {}; timeLeft = 1800;
   entries.sort(function(){return Math.random()-0.5});
-  questions = entries.slice(0,30).map(function(wq) { return { pregunta_id: wq.pregunta_id, q: wq.pregunta, opts: wq.opciones, ans: wq.respuesta_correcta, img: wq.imagen, exp: wq.explicacion, tema: wq.tema }; });
+  questions = entries.slice(0,30).map(function(wq) { return { pregunta_id: wq.pregunta_id, pregunta: wq.pregunta, opciones: wq.opciones, respuesta_correcta: wq.respuesta_correcta, imagen_base64: wq.imagen_base64, explicacion: wq.explicacion, tema: wq.tema }; });
   document.getElementById('exam-num').textContent = 'Modo Repaso';
   showPage('exam');
   renderNav(); renderQ(); startTimer();
@@ -351,12 +351,16 @@ function renderQ() {
   var q = questions[qIndex];
   document.getElementById('exam-progress').textContent = 'Pregunta ' + (qIndex+1) + ' de ' + questions.length;
   var h = '<div class="question-num">' + (qIndex+1) + '. ' + (q.tema||'') + '</div>';
-  h += '<div class="question-text">' + (q.q||q.pregunta||'') + '</div>';
-  if (q.img || q.imagen) h += '<div class="question-image"><img src="' + (q.img||q.imagen) + '" alt="img"></div>';
+  h += '<div class="question-text">' + (q.pregunta||'') + '</div>';
+  // Handle base64 images
+  if (q.imagen_base64 && q.imagen_base64.length > 100) {
+    h += '<div class="question-image"><img src="data:image/jpeg;base64,' + q.imagen_base64 + '" alt="img"></div>';
+  }
   h += '<div class="options">';
-  var opts = q.opts || q.opciones || [], letters = ['A','B','C','D'];
+  var opts = q.opciones || [], letters = ['A','B','C','D'];
   opts.forEach(function(o,i) {
-    h += '<div class="option-btn'+(answers[qIndex]===i?' selected':'')+'" onclick="selectOpt('+i+')"><span class="option-letter">'+letters[i]+'</span>'+o+'</div>';
+    var txt = typeof o === 'string' ? o : (o.texto || '');
+    h += '<div class="option-btn'+(answers[qIndex]===i?' selected':'')+'" onclick="selectOpt('+i+')"><span class="option-letter">'+letters[i]+'</span>'+txt+'</div>';
   });
   h += '</div>';
   document.getElementById('question-card').innerHTML = h;
@@ -372,11 +376,11 @@ async function finishTest() {
   stopTimer();
   var correct = 0, review = [];
   questions.forEach(function(q, i) {
-    var ua = answers[i], ca = ansToIdx(q.ans||q.respuesta_correcta), ok = ua === ca;
+    var ua = answers[i], ca = ansToIdx(q.respuesta_correcta), ok = ua === ca;
     if (ok) correct++;
-    var qid = q.id||q.pregunta_id||'';
-    if (!ok && qid) saveWrong(qid, { pregunta_id: qid, pregunta: q.q||q.pregunta, opciones: q.opts||q.opciones, respuesta_correcta: q.ans||q.respuesta_correcta, imagen: q.img||q.imagen, tema: q.tema, explicacion: q.exp||q.explicacion });
-    review.push({ q: q.q||q.pregunta, opts: q.opts||q.opciones, ua: ua, ca: ca, ok: ok, exp: q.exp||q.explicacion });
+    var qid = q.pregunta_id||'';
+    if (!ok && qid) saveWrong(qid, { pregunta_id: qid, pregunta: q.pregunta, opciones: q.opciones, respuesta_correcta: q.respuesta_correcta, imagen_base64: q.imagen_base64, tema: q.tema, explicacion: q.explicacion });
+    review.push({ q: q.pregunta, opts: q.opciones, ua: ua, ca: ca, ok: ok, exp: q.explicacion });
   });
   if (!isRepaso) { var tn = parseInt(document.getElementById('exam-num').textContent.replace(/[^0-9]/g,'')); if (tn) saveHistory(tn, correct, review); }
   var el = document.getElementById('result-score');
@@ -389,7 +393,7 @@ async function finishTest() {
   document.getElementById('review-list').innerHTML = review.map(function(r,i) {
     var letters = ['A','B','C','D'];
     return '<div class="review-item '+(r.ok?'correct':'wrong')+'"><div class="review-q">'+(i+1)+'. '+r.q+'</div><div class="review-options">'+
-      r.opts.map(function(o,j){ return '<div class="review-opt'+(j===r.ua?' chosen':'')+(j===r.ca?' answer':'')+'">'+letters[j]+'. '+o+'</div>'; }).join('')+
+      r.opts.map(function(o,j){ var t=typeof o==='string'?o:(o.texto||''); return '<div class="review-opt'+(j===r.ua?' chosen':'')+(j===r.ca?' answer':'')+'">'+letters[j]+'. '+t+'</div>'; }).join('')+
       (!r.ok&&r.exp?'<div style="margin-top:8px;font-size:12px;color:var(--text2)">'+r.exp+'</div>':'') + '</div>';
   }).join('');
   showPage('results');

@@ -3,29 +3,20 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tests DGT Permiso B ☁️</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<title>Tests DGT Permiso B</title>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --bg:#f0f2f5;--card:#fff;--text:#1a1a2e;--text2:#555;
-  --primary:#1a73e8;--primary-hover:#1557b0;--success:#0d904f;--danger:#d93025;
-  --warning:#e8710a;--border:#ddd;--shadow:0 2px 8px rgba(0,0,0,.08);
-  --radius:12px;--radius-sm:8px;--orange:#f88000;--dark:#1a1a2e;
-}
+:root{--bg:#f0f2f5;--card:#fff;--text:#1a1a2e;--text2:#555;--primary:#1a73e8;--primary-hover:#1557b0;--success:#0d904f;--danger:#d93025;--warning:#e8710a;--border:#ddd;--shadow:0 2px 8px rgba(0,0,0,.08);--radius:12px;--radius-sm:8px;--orange:#f88000;--dark:#1a1a2e}
 body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.5}
 .header{background:var(--dark);color:#fff;padding:8px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 10px rgba(0,0,0,.3)}
 .header-left{display:flex;align-items:center;gap:8px}
-.header-logo{font-size:18px;font-weight:700;letter-spacing:-0.5px}
+.header-logo{font-size:18px;font-weight:700}
 .header-logo span{color:var(--orange)}
 .header-right{display:flex;align-items:center;gap:8px}
-.btn{display:inline-flex;align-items:center;gap:4px;padding:6px 14px;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;text-decoration:none}
+.btn{display:inline-flex;align-items:center;gap:4px;padding:6px 14px;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;transition:all .2s}
 .btn-primary{background:var(--primary);color:#fff}
-.btn-primary:hover{background:var(--primary-hover);transform:translateY(-1px)}
+.btn-primary:hover{background:var(--primary-hover)}
 .btn-outline{background:transparent;color:#fff;border:2px solid rgba(255,255,255,.3)}
-.btn-outline:hover{background:rgba(255,255,255,.1)}
-.btn-danger{background:var(--danger);color:#fff}
-.btn-warning{background:var(--warning);color:#fff}
 .btn-sm{padding:5px 12px;font-size:12px}
 .container{max-width:1000px;margin:0 auto;padding:12px 16px}
 .page{display:none}
@@ -41,10 +32,10 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--
 .filter-btn:hover,.filter-btn.active{background:var(--primary);color:#fff;border-color:var(--primary)}
 .tests-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(85px,1fr));gap:7px}
 .test-card{background:var(--card);border-radius:var(--radius);padding:10px 6px;text-align:center;cursor:pointer;box-shadow:var(--shadow);transition:all .2s;border:2px solid transparent;position:relative}
-.test-card:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.12);border-color:var(--primary)}
+.test-card:hover{transform:translateY(-2px);border-color:var(--primary)}
 .test-card.completed{border-color:var(--success);background:#f0faf4}
 .test-card.failed{border-color:var(--danger);background:#fef2f2}
-.test-num{font-size:17px;font-weight:700;color:var(--dark)}
+.test-num{font-size:17px;font-weight:700}
 .test-score{font-size:10px;color:var(--success);margin-top:2px}
 .test-score.fail{color:var(--danger)}
 .test-badge{position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;color:#fff}
@@ -54,37 +45,33 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--
 .exam-info{display:flex;align-items:center;gap:14px}
 .exam-test-num{font-size:15px;font-weight:700}
 .exam-progress{font-size:12px;color:var(--text2)}
-.timer{font-size:24px;font-weight:700;font-variant-numeric:tabular-nums;font-family:'SF Mono','Consolas',monospace}
-.timer.warning{color:var(--warning);animation:pulse 1s infinite}
-.timer.danger{color:var(--danger);animation:pulse .5s infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.timer{font-size:24px;font-weight:700;font-family:monospace}
+.timer.warning{color:var(--warning)}
+.timer.danger{color:var(--danger)}
 .question-nav{display:flex;gap:3px;flex-wrap:wrap;margin-bottom:8px;max-height:80px;overflow-y:auto;padding:6px;background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow)}
-.qnav-btn{width:28px;height:28px;border:2px solid var(--border);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;cursor:pointer;transition:all .15s;background:#fff;flex-shrink:0}
+.qnav-btn{width:28px;height:28px;border:2px solid var(--border);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;cursor:pointer;background:#fff;flex-shrink:0}
 .qnav-btn:hover{background:var(--primary);color:#fff;border-color:var(--primary)}
 .qnav-btn.current{background:var(--primary);color:#fff;border-color:var(--primary)}
 .qnav-btn.answered{background:#e8f0fe;border-color:var(--primary);color:var(--primary)}
-.qnav-btn.correct{background:var(--success);color:#fff;border-color:var(--success)}
-.qnav-btn.wrong{background:var(--danger);color:#fff;border-color:var(--danger)}
 .question-card{background:var(--card);border-radius:var(--radius);padding:14px 18px;box-shadow:var(--shadow);margin-bottom:8px}
 .question-num{font-size:12px;color:var(--text2);margin-bottom:4px}
 .question-text{font-size:14px;line-height:1.45;margin-bottom:10px;font-weight:500}
 .question-image{margin-bottom:10px;text-align:center}
-.question-image img{max-width:100%;max-height:200px;border-radius:var(--radius-sm);border:1px solid var(--border);object-fit:contain}
+.question-image img{max-width:100%;max-height:200px;border-radius:var(--radius-sm);border:1px solid var(--border)}
 .options{display:flex;flex-direction:column;gap:5px}
-.option-btn{display:flex;align-items:center;gap:10px;padding:8px 14px;border:2px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;transition:all .15s;background:#fff;text-align:left;font-size:13px;line-height:1.35}
+.option-btn{display:flex;align-items:center;gap:10px;padding:8px 14px;border:2px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;background:#fff;text-align:left;font-size:13px}
 .option-btn:hover{border-color:var(--primary);background:#f8faff}
 .option-btn.selected{border-color:var(--primary);background:#e8f0fe;font-weight:600}
 .option-letter{width:26px;height:26px;border-radius:50%;background:var(--bg);display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0;font-size:12px}
 .option-btn.selected .option-letter{background:var(--primary);color:#fff}
 .exam-actions{display:flex;gap:8px;justify-content:space-between;align-items:center;margin-top:8px}
-.nav-arrows{display:flex;gap:6px}
 .result-header{background:var(--card);border-radius:var(--radius);padding:30px;box-shadow:var(--shadow);text-align:center;margin-bottom:20px}
-.result-score{font-size:64px;font-weight:800;line-height:1}
+.result-score{font-size:64px;font-weight:800}
 .result-score.pass{color:var(--success)}
 .result-score.fail{color:var(--danger)}
 .result-detail{font-size:14px;color:var(--text2);margin-top:8px}
 .result-bar{width:200px;height:8px;background:var(--border);border-radius:4px;margin:16px auto;overflow:hidden}
-.result-bar-fill{height:100%;border-radius:4px;transition:width .5s}
+.result-bar-fill{height:100%;border-radius:4px}
 .review-list{display:flex;flex-direction:column;gap:12px}
 .review-item{background:var(--card);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);border-left:4px solid var(--border)}
 .review-item.correct{border-left-color:var(--success)}
@@ -99,73 +86,54 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--
 .topic-title{font-size:18px;font-weight:700;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid var(--primary);display:flex;justify-content:space-between;align-items:center}
 .topic-count{font-size:14px;color:var(--text2);font-weight:400}
 .wrong-list{display:flex;flex-direction:column;gap:8px}
-.wrong-item{background:var(--card);border-radius:var(--radius-sm);padding:14px 18px;box-shadow:var(--shadow);display:flex;justify-content:space-between;align-items:center;cursor:pointer;transition:all .15s}
+.wrong-item{background:var(--card);border-radius:var(--radius-sm);padding:14px 18px;box-shadow:var(--shadow);cursor:pointer}
 .wrong-item:hover{background:#fef2f2}
 .wrong-q-text{flex:1;font-size:14px;margin-right:12px}
 .wrong-q-meta{font-size:12px;color:var(--text2);white-space:nowrap}
-.wrong-times{background:var(--danger);color:#fff;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700}
-.modal-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.6);z-index:200;justify-content:center;align-items:center;padding:20px}
-.modal-overlay.show{display:flex}
-.modal{background:#fff;border-radius:var(--radius);max-width:700px;width:100%;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)}
-.modal-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:#fff;z-index:1}
-.modal-close{width:32px;height:32px;border:none;background:var(--bg);border-radius:50%;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center}
-.modal-body{padding:20px}
 .empty-state{text-align:center;padding:60px 20px}
 .empty-icon{font-size:64px;margin-bottom:16px}
 .empty-title{font-size:20px;font-weight:700;margin-bottom:8px}
-.empty-text{color:var(--text2)}
 .repaso-banner{background:linear-gradient(135deg,#fef3c7,#fde68a);border:2px solid #f59e0b;border-radius:var(--radius);padding:8px 14px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px}
 .repaso-banner-text{font-weight:600;color:#92400e;font-size:13px}
-.toast{position:fixed;bottom:24px;right:24px;background:var(--dark);color:#fff;padding:14px 24px;border-radius:var(--radius-sm);font-weight:600;z-index:300;animation:slideIn .3s ease;box-shadow:0 8px 24px rgba(0,0,0,.3)}
-@keyframes slideIn{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
-/* LOGIN */
 .login-container{max-width:400px;margin:80px auto;background:var(--card);border-radius:var(--radius);padding:40px;box-shadow:var(--shadow);text-align:center}
 .login-container h2{margin-bottom:8px}
-.login-container input{width:100%;padding:12px;margin:8px 0;border:2px solid var(--border);border-radius:var(--radius-sm);font-size:14px}
-.login-container input:focus{outline:none;border-color:var(--primary)}
+.login-container input{width:100%;padding:12px;margin:8px 0;border:2px solid var(--border);border-radius:var(--radius-sm);font-size:14px;outline:none}
+.login-container input:focus{border-color:var(--primary)}
 #user-display{font-size:12px;color:rgba(255,255,255,.7);margin-right:4px}
-/* ========== ZOOM ========== */
-.question-image{position:relative;cursor:zoom-in}
-.zoom-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.92);z-index:300;cursor:zoom-out;justify-content:center;align-items:center;padding:40px}
-.zoom-overlay.show{display:flex}
-.zoom-overlay img{max-width:95vw;max-height:95vh;object-fit:contain;border-radius:8px}
-.zoom-close{position:fixed;top:16px;right:16px;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.2);color:#fff;border:none;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:301}
-@media(max-width:768px){.tests-grid{grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:6px}.result-score{font-size:48px}.stats-bar{flex-direction:column}}
+#login-msg{margin-top:10px;font-size:12px;font-weight:600}
+@media(max-width:768px){.tests-grid{grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:6px}.result-score{font-size:48px}}
 </style>
 </head>
 <body>
 
-<!-- HEADER -->
 <header class="header">
-  <div class="header-left">
-    <div class="header-logo">☁️ DGT<span>Cloud</span> Tests</div>
-  </div>
+  <div class="header-left"><div class="header-logo">DGT<span>Cloud</span> Tests</div></div>
   <div class="header-right" id="header-right">
     <span id="user-display"></span>
-    <button class="btn btn-outline btn-sm" onclick="showPage('home')" style="display:none" id="btn-nav-home">📋 Tests</button>
-    <button class="btn btn-sm" id="btn-fallos-header" style="background:#fef3c7;color:#92400e;border:2px solid #f59e0b;display:none" onclick="showWrongCollection()">📝 Fallos <span id="wrong-count-h">0</span></button>
-    <button class="btn btn-outline btn-sm" onclick="logout()" style="display:none" id="btn-logout">🚪 Salir</button>
+    <button class="btn btn-outline btn-sm" onclick="goHome()" style="display:none" id="btn-nav-home">Tests</button>
+    <button class="btn btn-sm" id="btn-fallos-header" style="background:#fef3c7;color:#92400e;border:2px solid #f59e0b;display:none" onclick="showWrong()">Fallos <span id="wrong-count-h">0</span></button>
+    <button class="btn btn-outline btn-sm" onclick="doLogout()" style="display:none" id="btn-logout">Salir</button>
   </div>
 </header>
 
 <div class="container">
 
-<!-- ========== LOGIN PAGE ========== -->
+<!-- LOGIN -->
 <div id="page-login" class="page active">
   <div class="login-container">
-    <h2>☁️ DGT Permiso B</h2>
-    <p style="color:var(--text2);margin-bottom:20px">Accede para sincronizar tu progreso en la nube</p>
-    <input type="text" id="login-email" placeholder="Usuario" autocomplete="username" value="sheng">
-    <input type="password" id="login-password" placeholder="Contraseña" autocomplete="current-password">
-    <button class="btn btn-primary" onclick="login()" style="width:100%;justify-content:center;padding:12px;margin-top:8px;font-size:15px">☁️ Entrar</button>
-    <p id="login-msg" style="margin-top:10px;font-size:12px;color:var(--danger)"></p>
+    <h2>DGT Permiso B</h2>
+    <p style="color:var(--text2);margin-bottom:20px">Accede para sincronizar tu progreso</p>
+    <input type="text" id="login-user" placeholder="Usuario" value="sheng">
+    <input type="password" id="login-pass" placeholder="Contraseña">
+    <button class="btn btn-primary" id="btn-login" style="width:100%;justify-content:center;padding:12px;margin-top:8px;font-size:15px">Entrar</button>
+    <p id="login-msg"></p>
   </div>
 </div>
 
-<!-- ========== HOME ========== -->
+<!-- HOME -->
 <div id="page-home" class="page">
-  <div class="page-title">🚗 Tests Permiso B — Examen</div>
-  <div class="page-subtitle">30 preguntas · 30 minutos · 88 tests disponibles · ☁️ Sincronizado</div>
+  <div class="page-title">Tests Permiso B</div>
+  <div class="page-subtitle">30 preguntas · 30 minutos · 88 tests · Progreso sincronizado</div>
   <div class="stats-bar">
     <div class="stat-card"><div class="stat-value" id="stat-completed">0</div><div class="stat-label">Completados</div></div>
     <div class="stat-card"><div class="stat-value" id="stat-avg">-</div><div class="stat-label">Nota Media</div></div>
@@ -173,38 +141,33 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--
   </div>
   <div class="filter-bar">
     <button class="filter-btn active" onclick="filterTests('all',this)">Todos</button>
-    <button class="filter-btn" onclick="filterTests('done',this)">✅ Hechos</button>
-    <button class="filter-btn" onclick="filterTests('pending',this)">📋 Pendientes</button>
-    <button class="filter-btn" onclick="filterTests('failed',this)">❌ Fallados</button>
+    <button class="filter-btn" onclick="filterTests('done',this)">Hechos</button>
+    <button class="filter-btn" onclick="filterTests('pending',this)">Pendientes</button>
+    <button class="filter-btn" onclick="filterTests('failed',this)">Fallados</button>
   </div>
   <div id="repaso-action-card" class="repaso-banner" style="display:none">
-    <span class="repaso-banner-text">🔄 Modo Repaso — <strong></strong></span>
-    <button class="btn btn-warning btn-sm" onclick="startRepasoMode()">▶ Repasar Fallos</button>
+    <span class="repaso-banner-text">Modo Repaso — <strong id="repaso-label"></strong></span>
+    <button class="btn btn-sm" style="background:var(--warning);color:#fff" onclick="startRepaso()">Repasar Fallos</button>
   </div>
   <div class="tests-grid" id="tests-grid"></div>
 </div>
 
-<!-- ========== EXAM ========== -->
+<!-- EXAM -->
 <div id="page-exam" class="page">
   <div class="exam-top">
-    <div class="exam-info">
-      <span class="exam-test-num" id="exam-num"></span>
-      <span class="exam-progress" id="exam-progress"></span>
-    </div>
+    <div class="exam-info"><span class="exam-test-num" id="exam-num"></span><span class="exam-progress" id="exam-progress"></span></div>
     <div class="timer" id="timer">30:00</div>
-    <button class="btn btn-danger btn-sm" onclick="finishTest()">✅ Terminar</button>
+    <button class="btn btn-sm" style="background:var(--danger);color:#fff" onclick="finishTest()">Terminar</button>
   </div>
   <div class="question-nav" id="question-nav"></div>
   <div class="question-card" id="question-card"></div>
   <div class="exam-actions">
-    <div class="nav-arrows">
-      <button class="btn btn-outline btn-sm" onclick="prevQuestion()" style="color:var(--text);border-color:var(--border)">◀ Anterior</button>
-      <button class="btn btn-outline btn-sm" onclick="nextQuestion()" style="color:var(--text);border-color:var(--border)">Siguiente ▶</button>
-    </div>
+    <button class="btn btn-outline btn-sm" style="color:var(--text);border-color:var(--border)" onclick="prevQuestion()">Anterior</button>
+    <button class="btn btn-outline btn-sm" style="color:var(--text);border-color:var(--border)" onclick="nextQuestion()">Siguiente</button>
   </div>
 </div>
 
-<!-- ========== RESULTS ========== -->
+<!-- RESULTS -->
 <div id="page-results" class="page">
   <div class="result-header">
     <div class="result-score" id="result-score">0/30</div>
@@ -212,414 +175,239 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--
     <div class="result-bar"><div class="result-bar-fill" id="result-bar-fill"></div></div>
   </div>
   <div class="review-list" id="review-list"></div>
-  <div style="text-align:center;margin-top:20px">
-    <button class="btn btn-primary" onclick="showPage('home')">📋 Volver a Tests</button>
-  </div>
+  <div style="text-align:center;margin-top:20px"><button class="btn btn-primary" onclick="goHome()">Volver</button></div>
 </div>
 
-<!-- ========== WRONG COLLECTION ========== -->
+<!-- WRONG -->
 <div id="page-wrong" class="page">
-  <div class="page-title">📝 Colección de Fallos</div>
+  <div class="page-title">Coleccion de Fallos</div>
   <div id="wrong-content"></div>
 </div>
-</div>
 
-<!-- ZOOM OVERLAY -->
-<div class="zoom-overlay" id="zoom-overlay" onclick="closeZoom()">
-  <button class="zoom-close" onclick="closeZoom()">✕</button>
-  <img id="zoom-img" src="" alt="Zoom">
 </div>
-
-<!-- TOAST -->
-<div class="toast" id="toast" style="display:none"></div>
 
 <script>
-// ==================== CONFIG ====================
+// ========== CONFIG ==========
 const SUPABASE_URL = 'https://hcgzvomgdnmkwwuxixdv.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZ3p2b21nZG5ta3d3dXhpeGR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MTg3MTYsImV4cCI6MjA5Nzk5NDcxNn0.JCvp6LxhJQZwYzpPQpECdHvCFBEeHrm50NxDdcI_jyo';
 const FIXED_USER = 'sheng';
 const FIXED_PASS = 'chengsheng98';
-const USER_ID = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890';
-
-let supabase;
-let currentQuestions = [];
-let currentIndex = 0;
-let userAnswers = {};
-let timerInterval = null;
-let timeLeft = 1800;
-let currentPage = 'login';
-let currentFilter = 'all';
-let isRepasoMode = false;
-let testHistory = {};
-let wrongCollection = {};
-let loggedIn = false;
 const TOTAL_TESTS = 88;
 
-// ==================== INIT ====================
-function initApp() {
-  try { if (window.supabase) supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); } catch(e) {}
-  if (sessionStorage.getItem('dgt_logged_in') === '1') {
-    loggedIn = true;
+let questions = [], qIndex = 0, answers = {}, timerId = null, timeLeft = 1800;
+let currentFilter = 'all', isRepaso = false;
+let history = {}, wrongColl = {};
+
+// ========== INIT ==========
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('btn-login').addEventListener('click', doLogin);
+  document.getElementById('login-pass').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') doLogin();
+  });
+  // Check if already logged in
+  if (sessionStorage.getItem('dgt_auth') === '1') {
     showUI();
-    loadUserData().then(() => { showPage('home'); renderHome(); }).catch(() => { showPage('home'); renderHome(); });
+    loadData().then(() => { showPage('home'); renderHome(); });
   } else {
     showPage('login');
   }
-}
+});
 
-// ==================== AUTH (local, no Supabase Auth) ====================
-function login() {
-  const u = document.getElementById('login-email').value.trim();
-  const p = document.getElementById('login-password').value;
+// ========== AUTH ==========
+function doLogin() {
+  var u = document.getElementById('login-user').value.trim();
+  var p = document.getElementById('login-pass').value;
+  var msg = document.getElementById('login-msg');
   if (u === FIXED_USER && p === FIXED_PASS) {
-    loggedIn = true;
-    sessionStorage.setItem('dgt_logged_in', '1');
+    sessionStorage.setItem('dgt_auth', '1');
+    msg.textContent = '';
     showUI();
-    loadUserData().then(() => { showPage('home'); renderHome(); });
+    loadData().then(() => { showPage('home'); renderHome(); });
   } else {
-    showMsg('Usuario o contraseña incorrectos', false);
+    msg.textContent = 'Usuario o contrasena incorrectos';
+    msg.style.color = 'var(--danger)';
   }
 }
-function logout() {
-  loggedIn = false;
-  sessionStorage.removeItem('dgt_logged_in');
-  testHistory = {}; wrongCollection = {};
+function doLogout() {
+  sessionStorage.removeItem('dgt_auth');
+  history = {}; wrongColl = {};
   showPage('login');
 }
-function showMsg(msg, ok) {
-  const el = document.getElementById('login-msg');
-  if (!el) return;
-  el.textContent = msg;
-  el.style.color = ok ? 'var(--success)' : 'var(--danger)';
-  el.style.fontWeight = '600';
-}
 function showUI() {
-  document.getElementById('user-display').textContent = '👤 ' + FIXED_USER;
-  ['btn-nav-home','btn-fallos-header','btn-logout'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.style.display = '';
+  document.getElementById('user-display').textContent = 'sheng';
+  ['btn-nav-home','btn-fallos-header','btn-logout'].forEach(function(id) {
+    document.getElementById(id).style.display = '';
   });
 }
 
-// ==================== CLOUD SYNC (Supabase REST, no Auth) ====================
-async function loadUserData() {
-  // Fallback to localStorage for resilience
+// ========== DATA ==========
+async function loadData() {
+  // Always load from localStorage first
+  try { wrongColl = JSON.parse(localStorage.getItem('dgt_wrong') || '{}'); } catch(e) { wrongColl = {}; }
+  try { history = JSON.parse(localStorage.getItem('dgt_history') || '{}'); } catch(e) { history = {}; }
+  // Try Supabase
   try {
-    wrongCollection = JSON.parse(localStorage.getItem('dgt_wrong') || '{}');
-    testHistory = JSON.parse(localStorage.getItem('dgt_history') || '{}');
-  } catch(e) { wrongCollection = {}; testHistory = {}; }
-  // Try Supabase sync
-  try {
-    const hdrs = { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY };
-    const wRes = await fetch(SUPABASE_URL + '/rest/v1/wrong_questions?username=eq.' + FIXED_USER, { headers: hdrs });
-    if (wRes.ok) {
-      const wrong = await wRes.json();
-      if (Array.isArray(wrong)) {
-        wrongCollection = {};
-        wrong.forEach(w => { wrongCollection[w.pregunta_id] = w.question_data; });
-        localStorage.setItem('dgt_wrong', JSON.stringify(wrongCollection));
-      }
-    }
-    const hRes = await fetch(SUPABASE_URL + '/rest/v1/test_history?username=eq.' + FIXED_USER + '&order=test_num', { headers: hdrs });
-    if (hRes.ok) {
-      const history = await hRes.json();
-      if (Array.isArray(history)) {
-        testHistory = {};
-        history.forEach(h => { testHistory[h.test_num] = { score: h.score, answers: h.answers, date: h.fecha }; });
-        localStorage.setItem('dgt_history', JSON.stringify(testHistory));
-      }
-    }
-  } catch(e) { console.log('Cloud sync unavailable, using local storage'); }
+    var h = { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY };
+    var wR = await fetch(SUPABASE_URL + '/rest/v1/wrong_questions?username=eq.' + FIXED_USER, { headers: h });
+    if (wR.ok) { var w = await wR.json(); wrongColl = {}; if (Array.isArray(w)) w.forEach(function(x) { wrongColl[x.pregunta_id] = x.question_data; }); }
+    var hR = await fetch(SUPABASE_URL + '/rest/v1/test_history?username=eq.' + FIXED_USER, { headers: h });
+    if (hR.ok) { var hl = await hR.json(); history = {}; if (Array.isArray(hl)) hl.forEach(function(x) { history[x.test_num] = { score: x.score, answers: x.answers, date: x.fecha }; }); }
+    localStorage.setItem('dgt_wrong', JSON.stringify(wrongColl));
+    localStorage.setItem('dgt_history', JSON.stringify(history));
+  } catch(e) {}
 }
-
-async function syncWrongQuestion(questionId, questionData) {
-  const hdrs = { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' };
+async function saveWrong(qid, qdata) {
+  wrongColl[qid] = qdata;
+  localStorage.setItem('dgt_wrong', JSON.stringify(wrongColl));
   try {
     await fetch(SUPABASE_URL + '/rest/v1/wrong_questions', {
-      method: 'POST', headers: hdrs,
-      body: JSON.stringify({ username: FIXED_USER, pregunta_id: questionId, question_data: questionData })
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' },
+      body: JSON.stringify({ username: FIXED_USER, pregunta_id: qid, question_data: qdata })
     });
   } catch(e) {}
 }
-
-async function syncTestHistory(testNum, score, answers) {
-  const hdrs = { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json' };
+async function saveHistory(tn, sc, ans) {
+  history[tn] = { score: sc, answers: ans, date: new Date().toISOString() };
+  localStorage.setItem('dgt_history', JSON.stringify(history));
   try {
     await fetch(SUPABASE_URL + '/rest/v1/test_history', {
-      method: 'POST', headers: hdrs,
-      body: JSON.stringify({ username: FIXED_USER, test_num: testNum, score: score, answers: answers, fecha: new Date().toISOString() })
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: FIXED_USER, test_num: tn, score: sc, answers: ans, fecha: new Date().toISOString() })
     });
   } catch(e) {}
 }
 
-// ==================== NAVIGATION ====================
-function showPage(page) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  const el = document.getElementById('page-' + page);
+// ========== NAV ==========
+function showPage(p) {
+  document.querySelectorAll('.page').forEach(function(el) { el.classList.remove('active'); });
+  var el = document.getElementById('page-' + p);
   if (el) el.classList.add('active');
-  currentPage = page;
-  if (page === 'home') { stopTimer(); isRepasoMode = false; renderHome(); }
-  if (page === 'wrong') renderWrongCollection();
+  if (p === 'home') { stopTimer(); isRepaso = false; renderHome(); }
+  if (p === 'wrong') renderWrong();
 }
+function goHome() { showPage('home'); }
 
-// ==================== HOME ====================
+// ========== HOME ==========
 function renderHome() {
-  const grid = document.getElementById('tests-grid');
-  const completed = Object.values(testHistory).filter(h => h.score !== undefined);
-  document.getElementById('stat-completed').textContent = completed.length;
-  if (completed.length > 0) {
-    document.getElementById('stat-avg').textContent = Math.round(completed.reduce((s,h) => s + h.score, 0) / completed.length) + '/30';
-    document.getElementById('stat-best').textContent = Math.max(...completed.map(h => h.score)) + '/30';
-  }
-  const wc = Object.keys(wrongCollection).length;
+  var done = Object.values(history).filter(function(h) { return h.score !== undefined; });
+  document.getElementById('stat-completed').textContent = done.length;
+  document.getElementById('stat-avg').textContent = done.length ? Math.round(done.reduce(function(s,h){return s+h.score;},0)/done.length)+'/30' : '-';
+  var wc = Object.keys(wrongColl).length;
   document.getElementById('stat-errors').textContent = wc;
   document.getElementById('wrong-count-h').textContent = wc;
-
-  const repaso = document.getElementById('repaso-action-card');
-  if (repaso) {
-    repaso.style.display = wc > 0 ? 'flex' : 'none';
-    if (wc > 0) repaso.querySelector('strong').textContent = `${Math.min(30, wc)} preguntas de tu colección de fallos`;
-  }
-
-  let html = '';
-  for (let i = 1; i <= TOTAL_TESTS; i++) {
-    const h = testHistory[i];
-    let cls = '', badge = '', scoreHtml = '';
-    if (h?.score !== undefined) {
+  var rc = document.getElementById('repaso-action-card');
+  if (rc) { rc.style.display = wc > 0 ? 'flex' : 'none'; if (wc > 0) document.getElementById('repaso-label').textContent = Math.min(30,wc) + ' preguntas'; }
+  var html = '';
+  for (var i = 1; i <= TOTAL_TESTS; i++) {
+    var h = history[i], cls = '', badge = '', sh = '';
+    if (h && h.score !== undefined) {
       cls = h.score >= 27 ? 'completed' : 'failed';
-      badge = h.score >= 27 ? '<div class="test-badge badge-pass">✓</div>' : '<div class="test-badge badge-fail">✗</div>';
-      scoreHtml = `<div class="test-score ${h.score < 27 ? 'fail':''}">${h.score}/30</div>`;
+      badge = h.score >= 27 ? '<div class="test-badge badge-pass">OK</div>' : '<div class="test-badge badge-fail">X</div>';
+      sh = '<div class="test-score' + (h.score < 27 ? ' fail' : '') + '">' + h.score + '/30</div>';
     }
     if (currentFilter === 'done' && !h) continue;
     if (currentFilter === 'pending' && h) continue;
     if (currentFilter === 'failed' && (!h || h.score >= 27)) continue;
-    html += `<div class="test-card ${cls}" onclick="startTest(${i})">${badge}<div class="test-num">${i}</div>${scoreHtml}</div>`;
+    html += '<div class="test-card ' + cls + '" onclick="startTest(' + i + ')">' + badge + '<div class="test-num">' + i + '</div>' + sh + '</div>';
   }
-  grid.innerHTML = html || '<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-title">Sin resultados</div></div>';
+  document.getElementById('tests-grid').innerHTML = html || '<div class="empty-state"><div class="empty-icon">.</div><div class="empty-title">Sin resultados</div></div>';
 }
+function filterTests(f, btn) { currentFilter = f; document.querySelectorAll('.filter-btn').forEach(function(b){b.classList.remove('active')}); if(btn)btn.classList.add('active'); renderHome(); }
 
-function filterTests(filter, btn) {
-  currentFilter = filter;
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-  if (btn) btn.classList.add('active');
-  renderHome();
-}
-
-// ==================== EXAM ====================
-async function startTest(testNum) {
-  stopTimer();
-  isRepasoMode = false;
-  currentIndex = 0;
-  userAnswers = {};
-  timeLeft = 1800;
-
-  document.getElementById('exam-num').innerHTML = `Test #${testNum}`;
+// ========== EXAM ==========
+async function startTest(tn) {
+  stopTimer(); isRepaso = false; qIndex = 0; answers = {}; timeLeft = 1800;
+  document.getElementById('exam-num').textContent = 'Test #' + tn;
   showPage('exam');
-
   try {
-    const resp = await fetch(`tests/test_${String(testNum).padStart(3,'0')}.json`);
-    if (!resp.ok) throw new Error('Test no encontrado');
-    currentQuestions = await resp.json();
-    renderQuestionNav();
-    renderQuestion();
-    startTimer();
-  } catch(e) {
-    alert('Error: ' + e.message);
-    showPage('home');
-  }
+    var r = await fetch('tests/test_' + String(tn).padStart(3,'0') + '.json');
+    if (!r.ok) throw new Error('No encontrado');
+    questions = await r.json();
+    renderNav(); renderQ(); startTimer();
+  } catch(e) { alert(e.message); goHome(); }
 }
-
-function startRepasoMode() {
-  const entries = Object.values(wrongCollection);
-  if (!entries.length) { showToast('🎉 ¡No hay fallos!'); return; }
-  stopTimer();
-  isRepasoMode = true;
-  currentIndex = 0;
-  userAnswers = {};
-  timeLeft = 1800;
-  currentQuestions = entries.sort(() => Math.random() - 0.5).slice(0, 30).map(wq => ({
-    pregunta_num: 0, pregunta_id: wq.pregunta_id, pregunta: wq.pregunta,
-    opciones: wq.opciones, respuesta_correcta: wq.respuesta_correcta,
-    imagen: wq.imagen, tema: wq.tema, explicacion: wq.explicacion
-  }));
-  document.getElementById('exam-num').innerHTML = '🔄 Modo Repaso';
+function startRepaso() {
+  var entries = Object.values(wrongColl);
+  if (!entries.length) { alert('No hay fallos'); return; }
+  stopTimer(); isRepaso = true; qIndex = 0; answers = {}; timeLeft = 1800;
+  entries.sort(function(){return Math.random()-0.5});
+  questions = entries.slice(0,30).map(function(wq) { return { pregunta_id: wq.pregunta_id, q: wq.pregunta, opts: wq.opciones, ans: wq.respuesta_correcta, img: wq.imagen, exp: wq.explicacion, tema: wq.tema }; });
+  document.getElementById('exam-num').textContent = 'Modo Repaso';
   showPage('exam');
-  renderQuestionNav();
-  renderQuestion();
-  startTimer();
+  renderNav(); renderQ(); startTimer();
 }
-
-function startTimer() {
-  stopTimer();
-  updateTimerDisplay();
-  timerInterval = setInterval(() => {
-    timeLeft--;
-    updateTimerDisplay();
-    if (timeLeft <= 0) finishTest();
-  }, 1000);
-}
-function stopTimer() { if (timerInterval) { clearInterval(timerInterval); timerInterval = null; } }
-function updateTimerDisplay() {
-  const m = Math.floor(timeLeft / 60), s = timeLeft % 60;
-  const el = document.getElementById('timer');
-  el.textContent = `${m}:${String(s).padStart(2,'0')}`;
-  el.className = 'timer' + (timeLeft < 300 ? ' danger' : timeLeft < 600 ? ' warning' : '');
-}
-
-function renderQuestionNav() {
-  document.getElementById('question-nav').innerHTML = currentQuestions.map((q, i) => {
-    let cls = 'qnav-btn';
-    if (i === currentIndex) cls += ' current';
-    if (userAnswers[i] !== undefined) cls += ' answered';
-    return `<div class="${cls}" onclick="goToQuestion(${i})">${i+1}</div>`;
+function startTimer() { stopTimer(); updateTimer(); timerId = setInterval(function() { timeLeft--; updateTimer(); if (timeLeft <= 0) finishTest(); }, 1000); }
+function stopTimer() { if (timerId) { clearInterval(timerId); timerId = null; } }
+function updateTimer() { var m = Math.floor(timeLeft/60), s = timeLeft%60; var el = document.getElementById('timer'); el.textContent = m + ':' + String(s).padStart(2,'0'); el.className = 'timer' + (timeLeft<300?' danger':timeLeft<600?' warning':''); }
+function renderNav() {
+  document.getElementById('question-nav').innerHTML = questions.map(function(q,i) {
+    var cls = 'qnav-btn'; if (i===qIndex) cls += ' current'; if (answers[i]!==undefined) cls += ' answered';
+    return '<div class="'+cls+'" onclick="goTo('+i+')">'+(i+1)+'</div>';
   }).join('');
 }
-
-function renderQuestion() {
-  const q = currentQuestions[currentIndex];
-  document.getElementById('exam-progress').textContent = `Pregunta ${currentIndex+1} de ${currentQuestions.length}`;
-  let html = `<div class="question-num">Pregunta ${currentIndex+1} · ${q.tema||''}</div>`;
-  html += `<div class="question-text">${q.q||q.pregunta||''}</div>`;
-  if (q.img || q.imagen) {
-    html += `<div class="question-image" onclick="event.stopPropagation();zoomImage('${q.img||q.imagen}')"><img src="${q.img||q.imagen}" alt="Imagen"><span class="img-zoom-hint">🔍 Click para ampliar</span></div>`;
-  }
-  html += '<div class="options">';
-  const opts = q.opts || q.opciones || [];
-  const letters = ['A','B','C','D'];
-  opts.forEach((opt, i) => {
-    const selected = userAnswers[currentIndex] === i;
-    html += `<div class="option-btn${selected?' selected':''}" onclick="selectAnswer(${i})"><span class="option-letter">${letters[i]}</span>${opt}</div>`;
+function renderQ() {
+  var q = questions[qIndex];
+  document.getElementById('exam-progress').textContent = 'Pregunta ' + (qIndex+1) + ' de ' + questions.length;
+  var h = '<div class="question-num">' + (qIndex+1) + '. ' + (q.tema||'') + '</div>';
+  h += '<div class="question-text">' + (q.q||q.pregunta||'') + '</div>';
+  if (q.img || q.imagen) h += '<div class="question-image"><img src="' + (q.img||q.imagen) + '" alt="img"></div>';
+  h += '<div class="options">';
+  var opts = q.opts || q.opciones || [], letters = ['A','B','C','D'];
+  opts.forEach(function(o,i) {
+    h += '<div class="option-btn'+(answers[qIndex]===i?' selected':'')+'" onclick="selectOpt('+i+')"><span class="option-letter">'+letters[i]+'</span>'+o+'</div>';
   });
-  html += '</div>';
-  if (q.ref || q.referencia_libro) {
-    html += `<div style="margin-top:8px;font-size:11px;color:var(--text2)">📖 ${q.ref||q.referencia_libro}</div>`;
-  }
-  document.getElementById('question-card').innerHTML = html;
-  renderQuestionNav();
+  h += '</div>';
+  document.getElementById('question-card').innerHTML = h;
+  renderNav();
 }
-
-function selectAnswer(idx) {
-  userAnswers[currentIndex] = idx;
-  renderQuestion();
-}
-function goToQuestion(idx) { currentIndex = idx; renderQuestion(); }
-function nextQuestion() { if (currentIndex < currentQuestions.length - 1) { currentIndex++; renderQuestion(); } }
-function prevQuestion() { if (currentIndex > 0) { currentIndex--; renderQuestion(); } }
+function selectOpt(i) { answers[qIndex] = i; renderQ(); }
+function goTo(i) { qIndex = i; renderQ(); }
+function nextQuestion() { if (qIndex < questions.length-1) { qIndex++; renderQ(); } }
+function prevQuestion() { if (qIndex > 0) { qIndex--; renderQ(); } }
+function ansToIdx(a) { if (typeof a === 'number') return a; return 'ABCD'.indexOf(String(a||'').toUpperCase()); }
 
 async function finishTest() {
   stopTimer();
-  let correct = 0;
-  const answers = [];
-  currentQuestions.forEach((q, i) => {
-    const userAns = userAnswers[i];
-    const isCorrect = userAns !== undefined && lettersToIndex(q.ans||q.respuesta_correcta) === userAns;
-    if (isCorrect) correct++;
-    answers.push({ pregunta_id: q.id||q.pregunta_id, correct: isCorrect, userAns, correctAns: q.ans||q.respuesta_correcta });
-
-    // Add to wrong collection if incorrect
-    if (!isCorrect && q.id || q.pregunta_id) {
-      const qid = q.id || q.pregunta_id;
-      wrongCollection[qid] = {
-        pregunta_id: qid, pregunta: q.q||q.pregunta, opciones: q.opts||q.opciones,
-        respuesta_correcta: q.ans||q.respuesta_correcta, imagen: q.img||q.imagen,
-        tema: q.tema, explicacion: q.exp||q.explicacion
-      };
-      syncWrongQuestion(qid, wrongCollection[qid]);
-    }
+  var correct = 0, review = [];
+  questions.forEach(function(q, i) {
+    var ua = answers[i], ca = ansToIdx(q.ans||q.respuesta_correcta), ok = ua === ca;
+    if (ok) correct++;
+    var qid = q.id||q.pregunta_id||'';
+    if (!ok && qid) saveWrong(qid, { pregunta_id: qid, pregunta: q.q||q.pregunta, opciones: q.opts||q.opciones, respuesta_correcta: q.ans||q.respuesta_correcta, imagen: q.img||q.imagen, tema: q.tema, explicacion: q.exp||q.explicacion });
+    review.push({ q: q.q||q.pregunta, opts: q.opts||q.opciones, ua: ua, ca: ca, ok: ok, exp: q.exp||q.explicacion });
   });
-
-  // Save to cloud
-  if (!isRepasoMode) {
-    const tn = parseInt(document.getElementById('exam-num').textContent.replace('Test #',''));
-    if (tn) {
-      testHistory[tn] = { score: correct, answers, date: new Date().toISOString() };
-      syncTestHistory(tn, correct, answers);
-    }
-  }
-
-  // Show results
-  document.getElementById('result-score').textContent = correct + '/30';
-  document.getElementById('result-score').className = 'result-score ' + (correct >= 27 ? 'pass' : 'fail');
-  document.getElementById('result-detail').innerHTML = correct >= 27 ? '✅ ¡APTO!' : '❌ No apto (mínimo 27/30)';
-  const bar = document.getElementById('result-bar-fill');
+  if (!isRepaso) { var tn = parseInt(document.getElementById('exam-num').textContent.replace(/[^0-9]/g,'')); if (tn) saveHistory(tn, correct, review); }
+  var el = document.getElementById('result-score');
+  el.textContent = correct + '/30';
+  el.className = 'result-score ' + (correct >= 27 ? 'pass' : 'fail');
+  document.getElementById('result-detail').innerHTML = correct >= 27 ? 'APTO' : 'No apto (min 27/30)';
+  var bar = document.getElementById('result-bar-fill');
   bar.style.width = (correct/30*100) + '%';
   bar.style.background = correct >= 27 ? 'var(--success)' : 'var(--danger)';
-
-  document.getElementById('review-list').innerHTML = currentQuestions.map((q, i) => {
-    const userAns = userAnswers[i];
-    const correctAns = lettersToIndex(q.ans||q.respuesta_correcta);
-    const isCorrect = userAns === correctAns;
-    const letters = ['A','B','C','D'];
-    const opts = q.opts || q.opciones || [];
-    return `<div class="review-item ${isCorrect?'correct':'wrong'}"><div class="review-q">${i+1}. ${q.q||q.pregunta}</div>
-      <div class="review-options">${opts.map((o,j) => `<div class="review-opt${j===userAns?' chosen':''}${j===correctAns?' answer':''}">${letters[j]}. ${o}</div>`).join('')}</div>
-      ${!isCorrect && (q.exp||q.explicacion) ? `<div style="margin-top:8px;font-size:12px;color:var(--text2)">💡 ${q.exp||q.explicacion}</div>` : ''}
-    </div>`;
+  document.getElementById('review-list').innerHTML = review.map(function(r,i) {
+    var letters = ['A','B','C','D'];
+    return '<div class="review-item '+(r.ok?'correct':'wrong')+'"><div class="review-q">'+(i+1)+'. '+r.q+'</div><div class="review-options">'+
+      r.opts.map(function(o,j){ return '<div class="review-opt'+(j===r.ua?' chosen':'')+(j===r.ca?' answer':'')+'">'+letters[j]+'. '+o+'</div>'; }).join('')+
+      (!r.ok&&r.exp?'<div style="margin-top:8px;font-size:12px;color:var(--text2)">'+r.exp+'</div>':'') + '</div>';
   }).join('');
   showPage('results');
 }
 
-function lettersToIndex(ans) {
-  if (typeof ans === 'number') return ans;
-  if (!ans) return -1;
-  return 'ABCD'.indexOf(ans.toString().toUpperCase());
+// ========== WRONG ==========
+function showWrong() { showPage('wrong'); }
+function renderWrong() {
+  var entries = Object.values(wrongColl), el = document.getElementById('wrong-content');
+  if (!entries.length) { el.innerHTML = '<div class="empty-state"><div class="empty-icon">.</div><div class="empty-title">Sin fallos</div></div>'; return; }
+  var byTema = {};
+  entries.forEach(function(e) { var t = e.tema || 'Sin tema'; if (!byTema[t]) byTema[t] = []; byTema[t].push(e); });
+  el.innerHTML = Object.entries(byTema).map(function(_e) {
+    var tema = _e[0], qs = _e[1];
+    return '<div class="topic-group"><div class="topic-title">'+tema+' <span class="topic-count">'+qs.length+' fallos</span></div><div class="wrong-list">'+
+      qs.map(function(q) { return '<div class="wrong-item"><span class="wrong-q-text">'+q.pregunta.substring(0,120)+'</span><span class="wrong-q-meta">'+tema+'</span></div>'; }).join('')+'</div></div>';
+  }).join('');
 }
-
-// ==================== WRONG COLLECTION ====================
-function showWrongCollection() { showPage('wrong'); }
-function renderWrongCollection() {
-  const el = document.getElementById('wrong-content');
-  const entries = Object.values(wrongCollection);
-  if (!entries.length) {
-    el.innerHTML = '<div class="empty-state"><div class="empty-icon">🎉</div><div class="empty-title">¡Sin fallos!</div></div>';
-    return;
-  }
-  // Group by tema
-  const byTema = {};
-  entries.forEach(e => {
-    const t = e.tema || 'Sin tema';
-    if (!byTema[t]) byTema[t] = [];
-    byTema[t].push(e);
-  });
-  el.innerHTML = Object.entries(byTema).map(([tema, qs]) => `
-    <div class="topic-group">
-      <div class="topic-title">${tema} <span class="topic-count">${qs.length} fallos</span></div>
-      <div class="wrong-list">
-        ${qs.map(q => `<div class="wrong-item" onclick="reviewWrongQuestion('${q.pregunta_id}')">
-          <span class="wrong-q-text">${q.pregunta.substring(0,120)}</span>
-          <span class="wrong-q-meta">${tema}</span>
-        </div>`).join('')}
-      </div>
-    </div>
-  `).join('');
-}
-
-function reviewWrongQuestion(qid) {
-  const q = wrongCollection[qid];
-  if (!q) return;
-  // Show answer
-  const correctAns = q.respuesta_correcta;
-  const opts = q.opciones || [];
-  const letters = ['A','B','C','D'];
-  alert(`📝 ${q.pregunta}\n\n${opts.map((o,i) => `${letters[i]}. ${o}`).join('\n')}\n\n✅ Respuesta correcta: ${correctAns}\n💡 ${q.explicacion||''}`);
-}
-
-// ==================== IMAGE ZOOM ====================
-function zoomImage(src) {
-  document.getElementById('zoom-img').src = src;
-  document.getElementById('zoom-overlay').classList.add('show');
-}
-function closeZoom() { document.getElementById('zoom-overlay').classList.remove('show'); }
-
-// ==================== TOAST ====================
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg; t.style.display = 'block';
-  setTimeout(() => t.style.display = 'none', 3000);
-}
-
-// ==================== BOOT ====================
-initApp();
 </script>
 </body>
 </html>

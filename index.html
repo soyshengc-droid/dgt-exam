@@ -210,7 +210,7 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--
 /* ========== PDF EXPORT ========== */
 @media print{
   body{background:#fff!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .header,.exam-actions,.question-nav,.btn,#btn-export-pdf,#btn-clear-wrong,.wrong-stats,.page-subtitle,.repaso-banner,.stats-bar,.filter-bar{display:none!important}
+  .header,.exam-actions,.question-nav,.btn,#btn-export-pdf,#btn-export-header,#btn-clear-wrong,.wrong-stats,.page-subtitle,.repaso-banner,.stats-bar,.filter-bar{display:none!important}
   .container{max-width:100%;padding:0;margin:0}
   .page{display:block!important}
   .page-title{font-size:24px;margin-bottom:20px;border-bottom:2px solid #000;padding-bottom:10px}
@@ -237,6 +237,7 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--
     <button class="btn btn-outline btn-sm" onclick="showPage('home')">📋 Tests</button>
     <button class="btn btn-outline btn-sm" onclick="showPage('stats')">📊 Estadísticas</button>
     <button class="btn btn-sm" id="btn-fallos-header" style="background:#fef3c7;color:#92400e;border:2px solid #f59e0b" onclick="showWrongCollection()">📝 Fallos <span id="wrong-count-h">0</span></button>
+    <button class="btn btn-sm" id="btn-export-header" style="background:var(--danger);color:#fff;display:none" onclick="exportPDF()">📄 Exportar</button>
   </div>
 </header>
 
@@ -478,6 +479,8 @@ function renderHome() {
   const wrongCount = Object.keys(wrongColl).length;
   document.getElementById('stat-errors').textContent = wrongCount;
   document.getElementById('wrong-count-h').textContent = wrongCount;
+  var exportBtn = document.getElementById('btn-export-header');
+  if (exportBtn) exportBtn.style.display = wrongCount > 0 ? '' : 'none';
 
   // Show/hide repaso card
   const repasoCard = document.getElementById('repaso-action-card');

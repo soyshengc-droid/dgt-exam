@@ -1,4 +1,4 @@
--- Ejecutar en Supabase SQL Editor para actualizar el esquema
+    -- Ejecutar en Supabase SQL Editor para actualizar el esquema
 -- (Elimina las tablas viejas y crea las nuevas sin dependencia de auth.users)
 
 DROP TABLE IF EXISTS wrong_questions CASCADE;

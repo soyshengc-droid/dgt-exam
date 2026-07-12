@@ -406,6 +406,18 @@ let isRepasoMode = false;       // Repaso mode flag
 let lastAnswerTime = 0;         // Debounce timestamp
 const ANSWER_DEBOUNCE = 400;    // ms between answer clicks
 
+// ==================== CLEANUP OLD DATA ====================
+(function(){
+  try {
+    var w = localStorage.getItem('dgt_wrong_collection');
+    if (w && w.length > 2000000) {
+      // Data too large, clear it
+      localStorage.removeItem('dgt_wrong_collection');
+      console.log('⚠️ Old wrong collection cleared (too large)');
+    }
+  } catch(e) { localStorage.removeItem('dgt_wrong_collection'); }
+})();
+
 // ==================== PERSISTENCE ====================
 function getHistory() {
   try { return JSON.parse(localStorage.getItem('dgt_test_history') || '{}'); } catch(e) { return {}; }
@@ -555,7 +567,7 @@ function startRepasoMode() {
     opciones: wq.opciones,
     respuesta_correcta: wq.respuesta_correcta,
     tiene_imagen: wq.tiene_imagen,
-    imagen_base64: wq.tiene_imagen ? wq.imagen_base64 : null,
+    imagen_base64: null,  // No guardar en localStorage (demasiado grande)
     tema: wq.tema,
     referencia_libro: wq.referencia_libro,
     explicacion: null,
@@ -869,7 +881,7 @@ function finishTest() {
           tema: wq.tema,
           referencia_libro: wq.referencia_libro,
           tiene_imagen: wq.tiene_imagen,
-          imagen_base64: wq.tiene_imagen ? wq.imagen_base64 : null,
+          imagen_base64: null,  // No guardar en localStorage (demasiado grande)
           explicacion: wq.explicacion || '',
           test_num: wq.test_num || currentTestNum || 0,
           times_wrong: 0,
@@ -1250,7 +1262,7 @@ renderWrongCollection = function() {
       var ans = wq.respuesta_correcta||'';
       var ansIdx = letters.indexOf(ans);
       var imgHtml = '';
-      if (wq.imagen_base64 && wq.imagen_base64.length > 100) {
+      if (wq.imagen_base64 && wq.imagen_base64.length > 100 || wq.tiene_imagen) {
         imgHtml = '<div style="text-align:center;margin:8px 0"><img src="data:image/jpeg;base64,' + wq.imagen_base64 + '" style="max-width:100%;max-height:180px;border-radius:6px;border:1px solid #ddd"></div>';
       }
       var optsHtml = opts.map(function(o,j){

@@ -891,6 +891,8 @@ function finishTest() {
           referencia_libro: wq.referencia_libro,
           tiene_imagen: wq.tiene_imagen,
           imagen_base64: wq.tiene_imagen ? wq.imagen_base64 : null,
+          explicacion: wq.explicacion || '',
+          test_num: wq.test_num || currentTestNum || 0,
           times_wrong: 0,
           last_wrong: null,
         };
@@ -988,57 +990,88 @@ function showWrongCollection() {
 }
 
 function renderWrongCollection() {
-  const wrongColl = getWrongCollection();
-  const entries = Object.values(wrongColl);
-  document.getElementById('wrong-count-h').textContent = entries.length;
-  document.getElementById('btn-clear-wrong').style.display = entries.length > 0 ? 'inline-flex' : 'none';
+  var wrongColl = getWrongCollection();
+  var entries = Object.values(wrongColl);
+  var clearBtn = document.getElementById('btn-clear-wrong');
+  var exportBtn = document.getElementById('btn-export-pdf');
 
-  // Group by tema
-  const byTema = {};
-  entries.forEach(wq => {
-    const t = wq.tema || '?';
-    if (!byTema[t]) byTema[t] = [];
-    byTema[t].push(wq);
-  });
-
-  // Stats
-  document.getElementById('wrong-stats').innerHTML = `
-    <div class="stat-card"><div class="stat-value">${entries.length}</div><div class="stat-label">Preguntas Falladas</div></div>
-    <div class="stat-card"><div class="stat-value">${Object.keys(byTema).length}</div><div class="stat-label">Temas</div></div>
-    <div class="stat-card"><div class="stat-value">${entries.reduce((s,w) => s + w.times_wrong, 0)}</div><div class="stat-label">Fallos Totales</div></div>
-  `;
-
-  // Render by topic
-  const sortedTemas = Object.keys(byTema).sort((a,b) => Number(a) - Number(b));
-  let html = '';
-  if (sortedTemas.length === 0) {
-    html = `<div class="empty-state">
-      <div class="empty-icon">🎉</div>
-      <div class="empty-title">¡No hay fallos!</div>
-      <div class="empty-text">No has fallado ninguna pregunta todavía. ¡Sigue practicando!</div>
-    </div>`;
-  } else {
-    sortedTemas.forEach(tema => {
-      const items = byTema[tema];
-      html += `<div class="topic-group">
-        <div class="topic-title">📚 Tema ${tema} <span class="topic-count">${items.length} preguntas</span></div>
-        <div class="wrong-list">`;
-      items.forEach((wq, i) => {
-          var opts=(wq.opciones||[]).map(function(o){var t=typeof o==='string'?o:(o.texto||'');return t;});
-          var letters=['A','B','C','D'];var ans=wq.respuesta_correcta||'';
-          html += '<div class="wrong-item" onclick="reviewWrongQuestion(\'' + wq.pregunta_id + '\')">' +
-            '<div class="wrong-q-text">' + (i+1) + '. ' + wq.pregunta + '</div>' +
-            '<div class="wrong-q-meta">' +
-              '<span class="wrong-times">✗' + wq.times_wrong + '</span>' +
-              (wq.referencia_libro ? ' · ' + wq.referencia_libro : '') +
-              '<span class="wrong-answer"> ✅ ' + (opts[letters.indexOf(ans)]||ans) + '</span>' +
-              (wq.explicacion ? '<span class="wrong-exp"> 💡 ' + wq.explicacion + '</span>' : '') +
-            '</div></div>';
-      });
-      html += `</div></div>`;
-    });
+  if (entries.length === 0) {
+    document.getElementById('wrong-stats').innerHTML = '';
+    document.getElementById('wrong-content').innerHTML = '<div class="empty-state"><div class="empty-icon">🎉</div><div class="empty-title">No hay fallos</div></div>';
+    if (clearBtn) clearBtn.style.display = 'none';
+    if (exportBtn) exportBtn.style.display = 'none';
+    return;
   }
+  if (clearBtn) clearBtn.style.display = '';
+  if (exportBtn) exportBtn.style.display = '';
+
+  document.getElementById('wrong-stats').innerHTML = '<div class="stat-card"><div class="stat-value">' + entries.length + '</div><div class="stat-label">Preguntas Falladas</div></div>';
+
+  // Group by test_num
+  var byTest = {};
+  entries.forEach(function(wq) {
+    var tn = wq.test_num || 0;
+    if (!byTest[tn]) byTest[tn] = [];
+    byTest[tn].push(wq);
+  });
+  var testNums = Object.keys(byTest).sort(function(a,b){return Number(a)-Number(b)});
+
+  // Filter checkboxes
+  var html = '<div style="margin-bottom:14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">' +
+    '<span style="font-size:12px;font-weight:600;color:var(--text2)">Tests:</span>' +
+    '<button class="btn btn-sm" style="background:var(--border);font-size:11px" onclick="selectAllTests()">Todos</button>' +
+    '<button class="btn btn-sm" style="background:var(--border);font-size:11px" onclick="deselectAllTests()">Ninguno</button>';
+  testNums.forEach(function(tn) {
+    html += '<label style="font-size:12px;cursor:pointer;display:flex;align-items:center;gap:4px;padding:4px 10px;background:var(--card);border-radius:14px;border:1px solid var(--border)">' +
+      '<input type="checkbox" class="test-filter-cb" data-test="' + tn + '" checked onchange="filterWrongByTest()" style="margin:0"> Test ' + tn + ' (' + byTest[tn].length + ')</label>';
+  });
+  html += '</div>';
+
+  // Render full details per question
+  testNums.forEach(function(tn) {
+    var items = byTest[tn];
+    html += '<div class="topic-group" data-test-group="' + tn + '"><div class="topic-title">📋 Test ' + tn + ' <span class="topic-count">' + items.length + ' fallos</span></div><div class="wrong-list">';
+    items.forEach(function(wq) {
+      var opts = (wq.opciones||[]).map(function(o){return typeof o==='string'?o:(o.texto||'');});
+      var letters = ['A','B','C','D'];
+      var ans = wq.respuesta_correcta||'';
+      var ansIdx = letters.indexOf(ans);
+      var imgHtml = '';
+      if (wq.imagen_base64 && wq.imagen_base64.length > 100) {
+        imgHtml = '<div style="text-align:center;margin:8px 0"><img src="data:image/jpeg;base64,' + wq.imagen_base64 + '" style="max-width:100%;max-height:180px;border-radius:6px;border:1px solid #ddd"></div>';
+      }
+      var optsHtml = opts.map(function(o,j){
+        var cls = j===ansIdx ? 'style="background:#e6f4ea;border:2px solid var(--success);font-weight:600"' : '';
+        return '<div class="review-opt" ' + cls + '>' + letters[j] + '. ' + o + (j===ansIdx?' ✅':'') + '</div>';
+      }).join('');
+
+      html += '<div class="wrong-item" style="display:block;cursor:default;text-align:left;padding:16px">' +
+        '<div style="font-weight:600;margin-bottom:8px;font-size:14px">' + wq.pregunta + '</div>' +
+        imgHtml +
+        '<div style="display:flex;flex-direction:column;gap:4px;margin-bottom:8px">' + optsHtml + '</div>' +
+        (wq.explicacion ? '<div style="font-size:11px;color:#555;font-style:italic;margin-top:6px;padding:8px 12px;background:#f5f5fa;border-radius:6px">💡 ' + wq.explicacion + '</div>' : '') +
+        (wq.referencia_libro ? '<div style="font-size:10px;color:var(--text2);margin-top:4px">📖 ' + wq.referencia_libro + '</div>' : '') +
+        '</div>';
+    });
+    html += '</div></div>';
+  });
   document.getElementById('wrong-content').innerHTML = html;
+}
+
+function selectAllTests() {
+  document.querySelectorAll('.test-filter-cb').forEach(function(cb){cb.checked=true;});
+  filterWrongByTest();
+}
+function deselectAllTests() {
+  document.querySelectorAll('.test-filter-cb').forEach(function(cb){cb.checked=false;});
+  filterWrongByTest();
+}
+function filterWrongByTest() {
+  document.querySelectorAll('.test-filter-cb').forEach(function(cb){
+    var tn = cb.dataset.test;
+    var group = document.querySelector('[data-test-group="' + tn + '"]');
+    if (group) group.style.display = cb.checked ? '' : 'none';
+  });
 }
 
 function reviewWrongQuestion(preguntaId) {

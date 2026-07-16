@@ -422,16 +422,16 @@ function syncNow() {
   var KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZ3p2b21nZG5ta3d3dXhpeGR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MTg3MTYsImV4cCI6MjA5Nzk5NDcxNn0.JCvp6LxhJQZwYzpPQpECdHvCFBEeHrm50NxDdcI_jyo';
   var H={'apikey':KEY,'Authorization':'Bearer '+KEY,'Content-Type':'application/json','Prefer':'return=minimal'};
   var h=getHistory(), w=getWrongCollection();
-  // Sync history
+  var count=0, total=0;
   Object.keys(h).forEach(function(k){
-    if(h[k].score===undefined)return;
-    fetch('https://hcgzvomgdnmkwwuxixdv.supabase.co/rest/v1/test_history?username=eq.sheng&test_num=eq.'+k,{method:'PATCH',headers:H,body:JSON.stringify({score:h[k].score,answers:JSON.stringify(h[k].answers||{}),fecha:h[k].date||new Date().toISOString()})});
+    if(h[k].score===undefined)return; total++;
+    fetch('https://hcgzvomgdnmkwwuxixdv.supabase.co/rest/v1/test_history?username=eq.sheng&test_num=eq.'+k,{method:'PATCH',headers:H,body:JSON.stringify({score:h[k].score,answers:JSON.stringify(h[k].answers||{}),fecha:h[k].date||new Date().toISOString()})}).then(function(r){count++; if(count>=total)console.log('☁️ Sync OK: '+count+' tests');}).catch(function(e){console.log('☁️ Sync FAIL: '+e.message);});
   });
-  // Sync wrong questions
   Object.keys(w).forEach(function(k){
-    var q=w[k];
-    fetch('https://hcgzvomgdnmkwwuxixdv.supabase.co/rest/v1/wrong_questions?username=eq.sheng&pregunta_id=eq.'+encodeURIComponent(q.pregunta_id),{method:'PATCH',headers:H,body:JSON.stringify({question_data:{pregunta_id:q.pregunta_id,pregunta:q.pregunta||'',opciones:q.opciones||[],respuesta_correcta:q.respuesta_correcta||'',tema:q.tema||'',referencia_libro:q.referencia_libro||'',tiene_imagen:q.tiene_imagen||false,explicacion:q.explicacion||'',test_num:q.test_num||0,times_wrong:q.times_wrong||1}})});
+    var q=w[k]; total++;
+    fetch('https://hcgzvomgdnmkwwuxixdv.supabase.co/rest/v1/wrong_questions?username=eq.sheng&pregunta_id=eq.'+encodeURIComponent(q.pregunta_id),{method:'PATCH',headers:H,body:JSON.stringify({question_data:{pregunta_id:q.pregunta_id,pregunta:q.pregunta||'',opciones:q.opciones||[],respuesta_correcta:q.respuesta_correcta||'',tema:q.tema||'',referencia_libro:q.referencia_libro||'',tiene_imagen:q.tiene_imagen||false,explicacion:q.explicacion||'',test_num:q.test_num||0,times_wrong:q.times_wrong||1}})}).then(function(r){count++;}).catch(function(e){console.log('☁️ Wrong sync FAIL: '+e.message);});
   });
+  console.log('☁️ Syncing '+total+' items...');
 }
 
 // ==================== NAVIGATION ====================

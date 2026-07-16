@@ -1,0 +1,17 @@
+<!DOCTYPE html><html><body>
+<h2>Test Sync</h2><pre id="log"></pre>
+<script>
+var KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZ3p2b21nZG5ta3d3dXhpeGR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MTg3MTYsImV4cCI6MjA5Nzk5NDcxNn0.JCvp6LxhJQZwYzpPQpECdHvCFBEeHrm50NxDdcI_jyo';
+function L(m){document.getElementById('log').textContent+=m+'\n';}
+L('Testing PATCH...');
+fetch('https://hcgzvomgdnmkwwuxixdv.supabase.co/rest/v1/test_history?username=eq.sheng&test_num=eq.15',{
+  method:'PATCH',
+  headers:{'apikey':KEY,'Authorization':'Bearer '+KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
+  body:JSON.stringify({score:7,answers:'{}',fecha:new Date().toISOString()})
+}).then(function(r){L('✅ PATCH OK: '+r.status);return r.text();}).then(function(t){L('Body: '+t);}).catch(function(e){L('❌ FAIL: '+e.message);});
+
+L('Testing GET...');
+fetch('https://hcgzvomgdnmkwwuxixdv.supabase.co/rest/v1/test_history?username=eq.sheng&test_num=eq.15',{
+  headers:{'apikey':KEY,'Authorization':'Bearer '+KEY}
+}).then(function(r){L('✅ GET OK: '+r.status);return r.json();}).then(function(d){L('Score: '+d[0].score+'/30');}).catch(function(e){L('❌ GET FAIL: '+e.message);});
+</script></body></html>

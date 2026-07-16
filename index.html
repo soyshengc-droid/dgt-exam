@@ -411,47 +411,27 @@ const ANSWER_DEBOUNCE = 400;    // ms between answer clicks
 function getHistory() {
   try { return JSON.parse(localStorage.getItem('dgt_test_history') || '{}'); } catch(e) { return {}; }
 }
-function saveHistory(h) {
-  localStorage.setItem('dgt_test_history', JSON.stringify(h));
-  // Upload to cloud
-  try {
-    var keys = Object.keys(h).filter(function(k){return h[k].score!==undefined});
-    if (keys.length) {
-      var lk = keys[keys.length-1], hd = h[lk];
-      var xhr = new XMLHttpRequest();
-      xhr.open('PATCH', 'https://hcgzvomgdnmkwwuxixdv.supabase.co/rest/v1/test_history?username=eq.sheng&test_num=eq.'+parseInt(lk), true);
-      xhr.setRequestHeader('apikey', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZ3p2b21nZG5ta3d3dXhpeGR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MTg3MTYsImV4cCI6MjA5Nzk5NDcxNn0.JCvp6LxhJQZwYzpPQpECdHvCFBEeHrm50NxDdcI_jyo');
-      xhr.setRequestHeader('Authorization', 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZ3p2b21nZG5ta3d3dXhpeGR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MTg3MTYsImV4cCI6MjA5Nzk5NDcxNn0.JCvp6LxhJQZwYzpPQpECdHvCFBEeHrm50NxDdcI_jyo');
-      xhr.setRequestHeader('Content-Type', 'application/json');
-      xhr.setRequestHeader('Prefer', 'return=minimal');
-      xhr.send(JSON.stringify({score:hd.score, answers:JSON.stringify(hd.answers||{}), fecha:hd.date||new Date().toISOString()}));
-    }
-  } catch(e) {}
-}
+function saveHistory(h) { localStorage.setItem('dgt_test_history', JSON.stringify(h)); }
 
 function getWrongCollection() {
   try { return JSON.parse(localStorage.getItem('dgt_wrong_collection') || '{}'); } catch(e) { return {}; }
 }
-function saveWrongCollection(w) {
-  localStorage.setItem('dgt_wrong_collection', JSON.stringify(w));
-  // Upload all wrong questions to cloud
-  try {
-    Object.keys(w).forEach(function(k) {
-      var q = w[k];
-      var xhr = new XMLHttpRequest();
-      xhr.open('PATCH', 'https://hcgzvomgdnmkwwuxixdv.supabase.co/rest/v1/wrong_questions?username=eq.sheng&pregunta_id=eq.'+encodeURIComponent(q.pregunta_id), true);
-      xhr.setRequestHeader('apikey', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZ3p2b21nZG5ta3d3dXhpeGR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MTg3MTYsImV4cCI6MjA5Nzk5NDcxNn0.JCvp6LxhJQZwYzpPQpECdHvCFBEeHrm50NxDdcI_jyo');
-      xhr.setRequestHeader('Authorization', 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZ3p2b21nZG5ta3d3dXhpeGR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MTg3MTYsImV4cCI6MjA5Nzk5NDcxNn0.JCvp6LxhJQZwYzpPQpECdHvCFBEeHrm50NxDdcI_jyo');
-      xhr.setRequestHeader('Content-Type', 'application/json');
-      xhr.setRequestHeader('Prefer', 'return=minimal');
-      xhr.send(JSON.stringify({question_data:{
-        pregunta_id:q.pregunta_id, pregunta:q.pregunta||'', opciones:q.opciones||[],
-        respuesta_correcta:q.respuesta_correcta||'', tema:q.tema||'',
-        referencia_libro:q.referencia_libro||'', tiene_imagen:q.tiene_imagen||false,
-        explicacion:q.explicacion||'', test_num:q.test_num||0, times_wrong:q.times_wrong||1
-      }}));
-    });
-  } catch(e) {}
+function saveWrongCollection(w) { localStorage.setItem('dgt_wrong_collection', JSON.stringify(w)); }
+
+function syncNow() {
+  var KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZ3p2b21nZG5ta3d3dXhpeGR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MTg3MTYsImV4cCI6MjA5Nzk5NDcxNn0.JCvp6LxhJQZwYzpPQpECdHvCFBEeHrm50NxDdcI_jyo';
+  var H={'apikey':KEY,'Authorization':'Bearer '+KEY,'Content-Type':'application/json','Prefer':'return=minimal'};
+  var h=getHistory(), w=getWrongCollection();
+  // Sync history
+  Object.keys(h).forEach(function(k){
+    if(h[k].score===undefined)return;
+    fetch('https://hcgzvomgdnmkwwuxixdv.supabase.co/rest/v1/test_history?username=eq.sheng&test_num=eq.'+k,{method:'PATCH',headers:H,body:JSON.stringify({score:h[k].score,answers:JSON.stringify(h[k].answers||{}),fecha:h[k].date||new Date().toISOString()})});
+  });
+  // Sync wrong questions
+  Object.keys(w).forEach(function(k){
+    var q=w[k];
+    fetch('https://hcgzvomgdnmkwwuxixdv.supabase.co/rest/v1/wrong_questions?username=eq.sheng&pregunta_id=eq.'+encodeURIComponent(q.pregunta_id),{method:'PATCH',headers:H,body:JSON.stringify({question_data:{pregunta_id:q.pregunta_id,pregunta:q.pregunta||'',opciones:q.opciones||[],respuesta_correcta:q.respuesta_correcta||'',tema:q.tema||'',referencia_libro:q.referencia_libro||'',tiene_imagen:q.tiene_imagen||false,explicacion:q.explicacion||'',test_num:q.test_num||0,times_wrong:q.times_wrong||1}})});
+  });
 }
 
 // ==================== NAVIGATION ====================
@@ -918,6 +898,8 @@ function finishTest() {
   saveWrongCollection(wrongColl);
   updateWrongBadge();
   renderResults(correct, timeUsed, reviewItems);
+  // Sync to cloud
+  syncNow();
   showPage('results');
 }
 

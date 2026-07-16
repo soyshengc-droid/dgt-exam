@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Migrar datos a la nube</title>
+<style>body{font-family:Arial;max-width:600px;margin:50px auto;text-align:center}
+.btn{font-size:18px;padding:16px 40px;background:#d93025;color:#fff;border:none;border-radius:8px;cursor:pointer}
+#status{margin-top:20px;font-size:14px}</style></head><body>
+<h1>☁️ Migrar datos locales a la nube</h1>
+<p>Abre esta página en <b>http://localhost:8765/migrar.html</b> (tu servidor local)</p>
+<p>Haz clic para subir tus 15 tests a Supabase:</p>
+<button class="btn" onclick="migrar()">🚀 Subir a la nube</button>
+<div id="status"></div>
+<script>
+const SUPABASE_URL='https://hcgzvomgdnmkwwuxixdv.supabase.co';
+const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZ3p2b21nZG5ta3d3dXhpeGR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MTg3MTYsImV4cCI6MjA5Nzk5NDcxNn0.JCvp6LxhJQZwYzpPQpECdHvCFBEeHrm50NxDdcI_jyo';
+
+async function migrar(){
+  var s=document.getElementById('status');
+  s.textContent='⏳ Leyendo datos locales...';
+
+  var history={};
+  var wrong={};
+  try{ history=JSON.parse(localStorage.getItem('dgt_test_history')||'{}'); }catch(e){}
+  try{ wrong=JSON.parse(localStorage.getItem('dgt_wrong_collection')||'{}'); }catch(e){}
+
+  var hKeys=Object.keys(history).filter(function(k){return history[k].score!==undefined});
+  var wKeys=Object.keys(wrong);
+  s.textContent='📦 Encontrados: '+hKeys.length+' tests, '+wKeys.length+' fallos. Subiendo...';
+
+  var ok=0, fail=0;
+
+  // Subir historial
+  for(var i=0;i<hKeys.length;i++){
+    var k=hKeys[i], hd=history[k];
+    try{
+      var r=await fetch(SUPABASE_URL+'/rest/v1/test_history',{
+        method:'POST',
+        headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'},
+        body:JSON.stringify({username:'sheng',test_num:parseInt(k),score:hd.score,answers:hd.answers||[],fecha:hd.date||new Date().toISOString()})
+      });
+      if(r.ok) ok++; else fail++;
+    }catch(e){fail++}
+    s.textContent='📤 Tests: '+(ok+fail)+'/'+hKeys.length+' (fallos: '+fail+')';
+  }
+
+  // Subir fallos
+  var wOk=0, wFail=0;
+  for(var i=0;i<wKeys.length;i++){
+    var k=wKeys[i], wq=wrong[k];
+    var cloudData={
+      pregunta_id:wq.pregunta_id,
+      pregunta:wq.pregunta,
+      opciones:wq.opciones,
+      respuesta_correcta:wq.respuesta_correcta,
+      tema:wq.tema||'',
+      referencia_libro:wq.referencia_libro||'',
+      tiene_imagen:wq.tiene_imagen||false,
+      explicacion:wq.explicacion||'',
+      test_num:wq.test_num||0,
+      times_wrong:wq.times_wrong||1
+    };
+    try{
+      var r=await fetch(SUPABASE_URL+'/rest/v1/wrong_questions',{
+        method:'POST',
+        headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'},
+        body:JSON.stringify({username:'sheng',pregunta_id:wq.pregunta_id,question_data:cloudData})
+      });
+      if(r.ok) wOk++; else wFail++;
+    }catch(e){wFail++}
+    s.textContent='📤 Fallos: '+(wOk+wFail)+'/'+wKeys.length+' (fallos: '+wFail+')';
+  }
+
+  s.textContent='✅ ¡Completado! Tests: '+ok+'/'+hKeys.length+' subidos. Fallos: '+wOk+'/'+wKeys.length+' subidos. Ya puedes usar la versión cloud.';
+}
+</script></body></html>

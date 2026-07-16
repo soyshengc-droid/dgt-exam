@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Tests DGT Permiso B</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" async onload="initSupabase()"></script>
 <style>
 /* ========== RESET & BASE ========== */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -420,14 +420,18 @@ function getWrongCollection() {
 function saveWrongCollection(w) { localStorage.setItem('dgt_wrong_collection', JSON.stringify(w)); }
 
 var supabase = null;
-(function initSupabase(){
+function initSupabase(){
   try {
-    supabase = window.supabase.createClient(
-      'https://hcgzvomgdnmkwwuxixdv.supabase.co',
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZ3p2b21nZG5ta3d3dXhpeGR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MTg3MTYsImV4cCI6MjA5Nzk5NDcxNn0.JCvp6LxhJQZwYzpPQpECdHvCFBEeHrm50NxDdcI_jyo'
-    );
+    if (window.supabase) {
+      supabase = window.supabase.createClient(
+        'https://hcgzvomgdnmkwwuxixdv.supabase.co',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZ3p2b21nZG5ta3d3dXhpeGR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MTg3MTYsImV4cCI6MjA5Nzk5NDcxNn0.JCvp6LxhJQZwYzpPQpECdHvCFBEeHrm50NxDdcI_jyo'
+      );
+    }
   } catch(e) { supabase = null; }
-})();
+}
+// Also try immediately in case script already loaded
+if (window.supabase) initSupabase();
 
 function syncNow() {
   if (typeof supabase === 'undefined') return;

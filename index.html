@@ -406,132 +406,16 @@ let isRepasoMode = false;       // Repaso mode flag
 let lastAnswerTime = 0;         // Debounce timestamp
 const ANSWER_DEBOUNCE = 400;    // ms between answer clicks
 
-// ==================== PERSISTENCE (local + cloud) ====================
-const SUPABASE_URL = 'https://hcgzvomgdnmkwwuxixdv.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZ3p2b21nZG5ta3d3dXhpeGR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MTg3MTYsImV4cCI6MjA5Nzk5NDcxNn0.JCvp6LxhJQZwYzpPQpECdHvCFBEeHrm50NxDdcI_jyo';
-const CLOUD_USER = 'sheng';
-
-// Auto-cleanup: clear localStorage if bloated
-(function(){
-  try {
-    var w = localStorage.getItem('dgt_wrong_collection');
-    if (w && w.length > 3000000) {
-      localStorage.removeItem('dgt_wrong_collection');
-      console.log('⚠️ Datos locales limpiados (demasiado grandes). Se recargarán de la nube.');
-    }
-  } catch(e) { localStorage.clear(); }
-})();
-
+// ==================== PERSISTENCE ====================
 function getHistory() {
   try { return JSON.parse(localStorage.getItem('dgt_test_history') || '{}'); } catch(e) { return {}; }
 }
-function saveHistory(h) {
-  try { localStorage.setItem('dgt_test_history', JSON.stringify(h)); } catch(e) {}
-  // Sync to cloud (fire and forget)
-  var keys = Object.keys(h);
-  if (keys.length === 0) return;
-  var lastKey = keys[keys.length - 1];
-  var hd = h[lastKey];
-  var xhr = new XMLHttpRequest();
-  xhr.open('POST', SUPABASE_URL + '/rest/v1/test_history', true);
-  xhr.setRequestHeader('apikey', SUPABASE_KEY);
-  xhr.setRequestHeader('Authorization', 'Bearer ' + SUPABASE_KEY);
-  xhr.setRequestHeader('Content-Type', 'application/json');
-  xhr.setRequestHeader('Prefer', 'resolution=merge-duplicates');
-  xhr.send(JSON.stringify({ username: CLOUD_USER, test_num: parseInt(lastKey), score: hd.score, answers: hd.answers, fecha: hd.date || new Date().toISOString() }));
-}
+function saveHistory(h) { localStorage.setItem('dgt_test_history', JSON.stringify(h)); }
 
 function getWrongCollection() {
   try { return JSON.parse(localStorage.getItem('dgt_wrong_collection') || '{}'); } catch(e) { return {}; }
 }
-function saveWrongCollection(w) {
-  try { localStorage.setItem('dgt_wrong_collection', JSON.stringify(w)); } catch(e) {}
-  // Sync last added to cloud (without base64 images)
-  var keys = Object.keys(w);
-  if (keys.length === 0) return;
-  var lastKey = keys[keys.length - 1];
-  var q = w[lastKey];
-  var cloudData = {
-    pregunta_id: q.pregunta_id,
-    pregunta: q.pregunta,
-    opciones: q.opciones,
-    respuesta_correcta: q.respuesta_correcta,
-    tema: q.tema,
-    referencia_libro: q.referencia_libro || '',
-    tiene_imagen: q.tiene_imagen || false,
-    explicacion: q.explicacion || '',
-    test_num: q.test_num || 0,
-    times_wrong: q.times_wrong || 1
-  };
-  var xhr = new XMLHttpRequest();
-  xhr.open('POST', SUPABASE_URL + '/rest/v1/wrong_questions', true);
-  xhr.setRequestHeader('apikey', SUPABASE_KEY);
-  xhr.setRequestHeader('Authorization', 'Bearer ' + SUPABASE_KEY);
-  xhr.setRequestHeader('Content-Type', 'application/json');
-  xhr.setRequestHeader('Prefer', 'resolution=merge-duplicates');
-  xhr.send(JSON.stringify({ username: CLOUD_USER, pregunta_id: q.pregunta_id, question_data: cloudData }));
-}
-
-// Load cloud data and merge into localStorage
-function loadCloudData() {
-  return new Promise(function(resolve) {
-    var done = 0;
-    function check() { done++; if (done >= 2) resolve(); }
-
-    // Load history
-    var hx = new XMLHttpRequest();
-    hx.open('GET', SUPABASE_URL + '/rest/v1/test_history?username=eq.' + CLOUD_USER, true);
-    hx.setRequestHeader('apikey', SUPABASE_KEY);
-    hx.setRequestHeader('Authorization', 'Bearer ' + SUPABASE_KEY);
-    hx.onload = function() {
-      if (hx.status === 200) {
-        try {
-          var items = JSON.parse(hx.responseText);
-          if (Array.isArray(items) && items.length > 0) {
-            var h = getHistory();
-            items.forEach(function(x) { h[x.test_num] = { score: x.score, answers: x.answers, date: x.fecha }; });
-            localStorage.setItem('dgt_test_history', JSON.stringify(h));
-          }
-        } catch(e) {}
-      }
-      check();
-    };
-    hx.onerror = check;
-    hx.send();
-
-    // Load wrong questions
-    var wx = new XMLHttpRequest();
-    wx.open('GET', SUPABASE_URL + '/rest/v1/wrong_questions?username=eq.' + CLOUD_USER, true);
-    wx.setRequestHeader('apikey', SUPABASE_KEY);
-    wx.setRequestHeader('Authorization', 'Bearer ' + SUPABASE_KEY);
-    wx.onload = function() {
-      if (wx.status === 200) {
-        try {
-          var items = JSON.parse(wx.responseText);
-          if (Array.isArray(items) && items.length > 0) {
-            var w = getWrongCollection();
-            items.forEach(function(x) {
-              if (!w[x.pregunta_id]) {
-                w[x.pregunta_id] = x.question_data;
-              }
-            });
-            localStorage.setItem('dgt_wrong_collection', JSON.stringify(w));
-          }
-        } catch(e) {}
-      }
-      check();
-    };
-    wx.onerror = check;
-    wx.send();
-  });
-}
-
-// Load cloud data on startup and re-render after
-loadCloudData().then(function() {
-  if (currentPage === 'home') renderHome();
-  if (currentPage === 'wrong') renderWrongCollection();
-  updateWrongBadge();
-});
+function saveWrongCollection(w) { localStorage.setItem('dgt_wrong_collection', JSON.stringify(w)); }
 
 // ==================== NAVIGATION ====================
 function showPage(page) {
@@ -540,7 +424,7 @@ function showPage(page) {
   currentPage = page;
   if (page === 'home') { stopTimer(); isRepasoMode = false; renderHome(); }
   if (page === 'stats') { stopTimer(); renderStatistics(); }
-  if (page === 'wrong') { loadCloudData().then(function(){ renderWrongCollection(); }); }
+  if (page === 'wrong') renderWrongCollection();
   // Exit confirmation: warn if leaving exam page
   if (page !== 'exam') {
     window.removeEventListener('beforeunload', beforeUnloadHandler);
@@ -671,7 +555,7 @@ function startRepasoMode() {
     opciones: wq.opciones,
     respuesta_correcta: wq.respuesta_correcta,
     tiene_imagen: wq.tiene_imagen,
-    imagen_base64: null, // no guardar en localStorage
+    imagen_base64: wq.tiene_imagen ? wq.imagen_base64 : null,
     tema: wq.tema,
     referencia_libro: wq.referencia_libro,
     explicacion: null,
@@ -985,9 +869,7 @@ function finishTest() {
           tema: wq.tema,
           referencia_libro: wq.referencia_libro,
           tiene_imagen: wq.tiene_imagen,
-          imagen_base64: null,
-          explicacion: wq.explicacion || '',
-          test_num: wq.test_num || currentTestNum || 0,
+          imagen_base64: wq.tiene_imagen ? wq.imagen_base64 : null,
           times_wrong: 0,
           last_wrong: null,
         };
@@ -1314,56 +1196,168 @@ updateWrongBadge();
 </script>
 
 <script>
-// ==================== PDF EXPORT ====================
-var _origShowWrong = showWrongCollection;
-showWrongCollection = function() {
-  _origShowWrong();
-  setTimeout(function() {
-    var container = document.querySelector('#page-wrong');
-    if (container && !document.getElementById('btn-export-pdf')) {
-      var btn = document.createElement('button');
-      btn.id = 'btn-export-pdf';
-      btn.className = 'btn btn-sm';
-      btn.style.cssText = 'background:var(--danger);color:#fff;font-size:14px;padding:8px 16px;margin-bottom:12px';
-      btn.textContent = '📄 Exportar PDF';
-      btn.onclick = exportPDF;
-      var title = container.querySelector('.page-title');
-      if (title) title.parentNode.insertBefore(btn, title.nextSibling);
-    }
-  }, 300);
-};
+// ==================== CLOUD SYNC (added layer, does not modify original code) ====================
+(function(){
+  var SUPABASE_URL = 'https://hcgzvomgdnmkwwuxixdv.supabase.co';
+  var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZ3p2b21nZG5ta3d3dXhpeGR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MTg3MTYsImV4cCI6MjA5Nzk5NDcxNn0.JCvp6LxhJQZwYzpPQpECdHvCFBEeHrm50NxDdcI_jyo';
+  var USER = 'sheng';
 
-function exportPDF() {
-  var wrongColl = getWrongCollection();
-  var entries = Object.values(wrongColl);
-  if (!entries.length) { alert('No hay fallos'); return; }
-  var h = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Fallos DGT</title>' +
-    '<style>body{font-family:Arial;max-width:800px;margin:20px auto;color:#222}' +
-    'h1{border-bottom:2px solid #000;padding-bottom:8px}' +
-    '.q{margin:20px 0;padding:16px;border:1px solid #ccc;border-radius:8px;page-break-inside:avoid}' +
-    '.q img{max-width:100%;max-height:200px;display:block;margin:8px auto}' +
-    '.opt{padding:6px 10px;margin:2px 0;border-radius:4px}' +
-    '.correct{background:#d4edda;border:2px solid #28a745;font-weight:bold}' +
-    '.exp{font-style:italic;color:#555;margin-top:8px;padding:8px;background:#f8f8fa}' +
-    '@media print{body{margin:0}.q{border:1px solid #ddd}}</style></head><body>' +
-    '<h1>📝 Fallos DGT — ' + entries.length + ' preguntas</h1>';
-  var letters = ['A','B','C','D'];
-  entries.forEach(function(wq, i) {
-    var opts = (wq.opciones||[]).map(function(o){return typeof o==='string'?o:(o.texto||'');});
-    var ans = wq.respuesta_correcta||''; var ansIdx = letters.indexOf(ans);
-    h += '<div class="q"><h3>' + (i+1) + '. ' + wq.pregunta + '</h3>';
-    if (wq.imagen_base64 && wq.imagen_base64.length > 100) h += '<img src="data:image/jpeg;base64,' + wq.imagen_base64 + '">';
-    h += '<div>';
-    opts.forEach(function(o,j){ h += '<div class="opt' + (j===ansIdx?' correct':'') + '">' + letters[j] + '. ' + o + (j===ansIdx?' ✅':'') + '</div>'; });
-    h += '</div>';
-    if (wq.explicacion) h += '<div class="exp">💡 ' + wq.explicacion + '</div>';
-    h += '</div>';
-  });
-  h += '</body></html>';
-  var w = window.open('', '_blank');
-  w.document.write(h); w.document.close();
-  setTimeout(function(){ w.print(); }, 600);
-}
+  // Auto-clean localStorage if bloated
+  try {
+    var w = localStorage.getItem('dgt_wrong_collection');
+    if (w && w.length > 2000000) { localStorage.removeItem('dgt_wrong_collection'); }
+  } catch(e) { localStorage.clear(); }
+
+  // ----- Override saveHistory to also sync to cloud -----
+  var _origSaveHistory = saveHistory;
+  saveHistory = function(h) {
+    _origSaveHistory(h);
+    // Upload last entry to cloud
+    var keys = Object.keys(h);
+    if (!keys.length) return;
+    var lastKey = keys[keys.length-1], hd = h[lastKey];
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', SUPABASE_URL + '/rest/v1/test_history', true);
+    xhr.setRequestHeader('apikey', SUPABASE_KEY);
+    xhr.setRequestHeader('Authorization', 'Bearer ' + SUPABASE_KEY);
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.setRequestHeader('Prefer', 'resolution=merge-duplicates');
+    xhr.send(JSON.stringify({username:USER, test_num:parseInt(lastKey), score:hd.score, answers:hd.answers||[], fecha:hd.date||new Date().toISOString()}));
+  };
+
+  // ----- Override saveWrongCollection to also sync to cloud -----
+  var _origSaveWrong = saveWrongCollection;
+  saveWrongCollection = function(w) {
+    _origSaveWrong(w);
+    // Upload last entry to cloud (no base64 images)
+    var keys = Object.keys(w);
+    if (!keys.length) return;
+    var lastKey = keys[keys.length-1], q = w[lastKey];
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', SUPABASE_URL + '/rest/v1/wrong_questions', true);
+    xhr.setRequestHeader('apikey', SUPABASE_KEY);
+    xhr.setRequestHeader('Authorization', 'Bearer ' + SUPABASE_KEY);
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.setRequestHeader('Prefer', 'resolution=merge-duplicates');
+    xhr.send(JSON.stringify({username:USER, pregunta_id:q.pregunta_id, question_data:{
+      pregunta_id:q.pregunta_id, pregunta:q.pregunta, opciones:q.opciones,
+      respuesta_correcta:q.respuesta_correcta, tema:q.tema||'',
+      referencia_libro:q.referencia_libro||'', tiene_imagen:q.tiene_imagen||false,
+      explicacion:q.explicacion||'', test_num:q.test_num||0, times_wrong:q.times_wrong||1
+    }}));
+  };
+
+  // ----- Load cloud data and merge into localStorage -----
+  function loadCloud() {
+    var loaded = 0;
+    function check() { loaded++; if (loaded >= 2) { updateUI(); } }
+    // History
+    var hx = new XMLHttpRequest();
+    hx.open('GET', SUPABASE_URL + '/rest/v1/test_history?username=eq.' + USER, true);
+    hx.setRequestHeader('apikey', SUPABASE_KEY);
+    hx.setRequestHeader('Authorization', 'Bearer ' + SUPABASE_KEY);
+    hx.onload = function() {
+      if (hx.status === 200) try {
+        var items = JSON.parse(hx.responseText);
+        if (Array.isArray(items) && items.length) {
+          var h = {};
+          try { h = JSON.parse(localStorage.getItem('dgt_test_history')||'{}'); } catch(e){}
+          items.forEach(function(x){ h[x.test_num] = {score:x.score, answers:x.answers, date:x.fecha}; });
+          localStorage.setItem('dgt_test_history', JSON.stringify(h));
+        }
+      } catch(e) {}
+      check();
+    };
+    hx.onerror = check;
+    hx.send();
+    // Wrong questions
+    var wx = new XMLHttpRequest();
+    wx.open('GET', SUPABASE_URL + '/rest/v1/wrong_questions?username=eq.' + USER, true);
+    wx.setRequestHeader('apikey', SUPABASE_KEY);
+    wx.setRequestHeader('Authorization', 'Bearer ' + SUPABASE_KEY);
+    wx.onload = function() {
+      if (wx.status === 200) try {
+        var items = JSON.parse(wx.responseText);
+        if (Array.isArray(items) && items.length) {
+          var w = {};
+          try { w = JSON.parse(localStorage.getItem('dgt_wrong_collection')||'{}'); } catch(e){}
+          items.forEach(function(x){ if(!w[x.pregunta_id]) w[x.pregunta_id] = x.question_data; });
+          localStorage.setItem('dgt_wrong_collection', JSON.stringify(w));
+        }
+      } catch(e) {}
+      check();
+    };
+    wx.onerror = check;
+    wx.send();
+  }
+  function updateUI() {
+    if (typeof updateWrongBadge === 'function') updateWrongBadge();
+    if (typeof renderHome === 'function' && currentPage === 'home') renderHome();
+    if (typeof renderWrongCollection === 'function' && currentPage === 'wrong') renderWrongCollection();
+  }
+
+  // Load cloud data when page loads
+  loadCloud();
+
+  // Also load when switching to home or wrong page
+  var _origShowPage = showPage;
+  showPage = function(page) {
+    _origShowPage(page);
+    if (page === 'home' || page === 'wrong') loadCloud();
+  };
+
+  // ----- PDF EXPORT -----
+  var _origShowWrong = showWrongCollection;
+  showWrongCollection = function() {
+    _origShowWrong();
+    setTimeout(function() {
+      if (!document.getElementById('btn-export-pdf')) {
+        var container = document.querySelector('#page-wrong');
+        if (container) {
+          var btn = document.createElement('button');
+          btn.id = 'btn-export-pdf';
+          btn.className = 'btn btn-sm';
+          btn.style.cssText = 'background:var(--danger);color:#fff;font-size:14px;padding:8px 16px;margin-bottom:10px';
+          btn.textContent = '📄 Exportar PDF';
+          btn.onclick = exportPDF;
+          var title = container.querySelector('.page-title');
+          if (title) title.parentNode.insertBefore(btn, title.nextSibling);
+        }
+      }
+    }, 300);
+  };
+  window.exportPDF = function() {
+    var wrong = {};
+    try { wrong = JSON.parse(localStorage.getItem('dgt_wrong_collection')||'{}'); } catch(e){}
+    var entries = Object.values(wrong);
+    if (!entries.length) { alert('No hay fallos para exportar'); return; }
+    var letters = ['A','B','C','D'];
+    var h = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Fallos DGT</title>' +
+      '<style>body{font-family:Arial;max-width:800px;margin:20px auto;color:#222}h1{border-bottom:2px solid #000;padding-bottom:8px}' +
+      '.q{margin:20px 0;padding:16px;border:1px solid #ccc;border-radius:8px;page-break-inside:avoid}' +
+      '.q img{max-width:100%;max-height:200px;display:block;margin:8px auto}' +
+      '.opt{padding:6px 10px;margin:2px 0;border-radius:4px}' +
+      '.correct{background:#d4edda;border:2px solid #28a745;font-weight:bold}' +
+      '.exp{font-style:italic;color:#555;margin-top:8px;padding:8px;background:#f8f8fa}' +
+      '@media print{body{margin:0}.q{border:1px solid #ddd}}</style></head><body>' +
+      '<h1>📝 Fallos DGT — ' + entries.length + ' preguntas</h1>';
+    entries.forEach(function(wq, i) {
+      var opts = (wq.opciones||[]).map(function(o){return typeof o==='string'?o:(o.texto||'');});
+      var ans = wq.respuesta_correcta||''; var ansIdx = letters.indexOf(ans);
+      h += '<div class="q"><h3>' + (i+1) + '. ' + wq.pregunta + '</h3>';
+      if (wq.imagen_base64 && wq.imagen_base64.length > 100) h += '<img src="data:image/jpeg;base64,' + wq.imagen_base64 + '">';
+      h += '<div>';
+      opts.forEach(function(o,j){ h += '<div class="opt' + (j===ansIdx?' correct':'') + '">' + letters[j] + '. ' + o + (j===ansIdx?' ✅':'') + '</div>'; });
+      h += '</div>';
+      if (wq.explicacion) h += '<div class="exp">💡 ' + wq.explicacion + '</div>';
+      h += '</div>';
+    });
+    h += '</body></html>';
+    var w = window.open('', '_blank');
+    w.document.write(h); w.document.close();
+    setTimeout(function(){ w.print(); }, 600);
+  };
+})();
 </script>
 
 </body>

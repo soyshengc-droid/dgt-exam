@@ -1342,21 +1342,8 @@ updateWrongBadge();
     } catch(e) { alert('Error: ' + e.message); }
   };
 
-  // Cooldown: skip cloud load right after saving (let upload complete first)
-  var _lastSave = 0;
-  var _origSaveHistory2 = saveHistory;
-  saveHistory = function(h) { _lastSave = Date.now(); _origSaveHistory2(h); };
-  var _origSaveWrong2 = saveWrongCollection;
-  saveWrongCollection = function(w) { _lastSave = Date.now(); _origSaveWrong2(w); };
-
-  // Also load when switching to home or wrong page (with cooldown)
-  var _origShowPage = showPage;
-  showPage = function(page) {
-    _origShowPage(page);
-    if ((page === 'home' || page === 'wrong') && Date.now() - _lastSave > 5000) {
-      loadCloud();
-    }
-  };
+  // Cloud load ONLY on initial page load (not on every navigation)
+  // After finishing a test, local data is the latest — upload happens in background
 
   // ----- PDF EXPORT -----
   var _origShowWrong = showWrongCollection;

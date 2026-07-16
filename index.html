@@ -1342,11 +1342,20 @@ updateWrongBadge();
     } catch(e) { alert('Error: ' + e.message); }
   };
 
-  // Also load when switching to home or wrong page
+  // Cooldown: skip cloud load right after saving (let upload complete first)
+  var _lastSave = 0;
+  var _origSaveHistory2 = saveHistory;
+  saveHistory = function(h) { _lastSave = Date.now(); _origSaveHistory2(h); };
+  var _origSaveWrong2 = saveWrongCollection;
+  saveWrongCollection = function(w) { _lastSave = Date.now(); _origSaveWrong2(w); };
+
+  // Also load when switching to home or wrong page (with cooldown)
   var _origShowPage = showPage;
   showPage = function(page) {
     _origShowPage(page);
-    if (page === 'home' || page === 'wrong') loadCloud();
+    if ((page === 'home' || page === 'wrong') && Date.now() - _lastSave > 5000) {
+      loadCloud();
+    }
   };
 
   // ----- PDF EXPORT -----

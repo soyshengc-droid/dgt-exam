@@ -1262,7 +1262,12 @@ updateWrongBadge();
         if (Array.isArray(items) && items.length) {
           var h = {};
           try { h = JSON.parse(localStorage.getItem('dgt_test_history')||'{}'); } catch(e){}
-          items.forEach(function(x){ h[x.test_num] = {score:x.score, answers:x.answers, date:x.fecha}; });
+          // Merge: use cloud if local doesn't exist OR cloud is newer
+          items.forEach(function(x){
+            if (!h[x.test_num] || (x.fecha && (!h[x.test_num].date || x.fecha > h[x.test_num].date))) {
+              h[x.test_num] = {score:x.score, answers:x.answers, date:x.fecha};
+            }
+          });
           localStorage.setItem('dgt_test_history', JSON.stringify(h));
         }
       } catch(e) {}

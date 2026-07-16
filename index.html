@@ -224,6 +224,7 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--
     <button class="btn btn-outline btn-sm" onclick="showPage('home')">📋 Tests</button>
     <button class="btn btn-outline btn-sm" onclick="showPage('stats')">📊 Estadísticas</button>
     <button class="btn btn-sm" id="btn-fallos-header" style="background:#fef3c7;color:#92400e;border:2px solid #f59e0b" onclick="showWrongCollection()">📝 Fallos <span id="wrong-count-h">0</span></button>
+    <button class="btn btn-outline btn-sm" onclick="syncAllToCloud()" title="Subir todos los datos a la nube" style="font-size:11px">☁️ Sincronizar</button>
   </div>
 </header>
 
@@ -1301,6 +1302,45 @@ updateWrongBadge();
 
   // Load cloud data when page loads
   loadCloud();
+
+  // One-click full sync button
+  window.syncAllToCloud = function() {
+    try {
+      var h = JSON.parse(localStorage.getItem('dgt_test_history')||'{}');
+      var w = JSON.parse(localStorage.getItem('dgt_wrong_collection')||'{}');
+      var hKeys = Object.keys(h).filter(function(k){return h[k].score!==undefined});
+      var wKeys = Object.keys(w);
+      var total = hKeys.length + wKeys.length, done = 0;
+      Object.keys(h).forEach(function(k){
+        if (h[k].score === undefined) return;
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', SUPABASE_URL + '/rest/v1/test_history', true);
+        xhr.setRequestHeader('apikey', SUPABASE_KEY);
+        xhr.setRequestHeader('Authorization', 'Bearer ' + SUPABASE_KEY);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.setRequestHeader('Prefer', 'resolution=merge-duplicates');
+        xhr.onload = function(){ done++; };
+        xhr.send(JSON.stringify({username:USER, test_num:parseInt(k), score:h[k].score, answers:JSON.stringify(h[k].answers||{}), fecha:h[k].date||''}));
+      });
+      Object.keys(w).forEach(function(k){
+        var q = w[k];
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', SUPABASE_URL + '/rest/v1/wrong_questions', true);
+        xhr.setRequestHeader('apikey', SUPABASE_KEY);
+        xhr.setRequestHeader('Authorization', 'Bearer ' + SUPABASE_KEY);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.setRequestHeader('Prefer', 'resolution=merge-duplicates');
+        xhr.onload = function(){ done++; };
+        xhr.send(JSON.stringify({username:USER, pregunta_id:q.pregunta_id, question_data:{
+          pregunta_id:q.pregunta_id, pregunta:q.pregunta||'', opciones:q.opciones||[],
+          respuesta_correcta:q.respuesta_correcta||'', tema:q.tema||'',
+          referencia_libro:q.referencia_libro||'', tiene_imagen:q.tiene_imagen||false,
+          explicacion:q.explicacion||'', test_num:q.test_num||0, times_wrong:q.times_wrong||1
+        }}));
+      });
+      alert('Sincronizando ' + total + ' items... Revisa en unos segundos.');
+    } catch(e) { alert('Error: ' + e.message); }
+  };
 
   // Also load when switching to home or wrong page
   var _origShowPage = showPage;

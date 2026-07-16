@@ -1238,8 +1238,10 @@ updateWrongBadge();
   var SUPABASE_URL='https://hcgzvomgdnmkwwuxixdv.supabase.co';
   var SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZ3p2b21nZG5ta3d3dXhpeGR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MTg3MTYsImV4cCI6MjA5Nzk5NDcxNn0.JCvp6LxhJQZwYzpPQpECdHvCFBEeHrm50NxDdcI_jyo';
 
-  // Load cloud data on page open
+  // Load cloud data on page open (write directly, no upload loop)
+  var _cloudDone=0;
   function loadCloud(){
+    _cloudDone=0;
     var hx=new XMLHttpRequest();
     hx.open('GET',SUPABASE_URL+'/rest/v1/test_history?username=eq.sheng',true);
     hx.setRequestHeader('apikey',SUPABASE_KEY);
@@ -1248,11 +1250,17 @@ updateWrongBadge();
       if(hx.status===200)try{
         var items=JSON.parse(hx.responseText);
         if(Array.isArray(items)&&items.length){
-          var h=getHistory();
-          items.forEach(function(x){h[x.test_num]={score:x.score,answers:JSON.parse(x.answers||'{}'),date:x.fecha};});
-          saveHistory(h);
+          var h=getHistory(); var changed=false;
+          items.forEach(function(x){
+            if(!h[x.test_num]||(h[x.test_num].score||0)<(x.score||0)){
+              h[x.test_num]={score:x.score,answers:JSON.parse(x.answers||'{}'),date:x.fecha};
+              changed=true;
+            }
+          });
+          if(changed) localStorage.setItem('dgt_test_history',JSON.stringify(h));
         }
       }catch(e){}
+      _cloudDone++; if(_cloudDone>=2&&typeof renderHome==='function')renderHome();
     };
     hx.send();
     var wx=new XMLHttpRequest();
@@ -1263,11 +1271,12 @@ updateWrongBadge();
       if(wx.status===200)try{
         var items=JSON.parse(wx.responseText);
         if(Array.isArray(items)&&items.length){
-          var w=getWrongCollection();
-          items.forEach(function(x){w[x.pregunta_id]=x.question_data;});
-          saveWrongCollection(w);
+          var w=getWrongCollection(); var changed=false;
+          items.forEach(function(x){if(!w[x.pregunta_id]){w[x.pregunta_id]=x.question_data;changed=true;}});
+          if(changed) localStorage.setItem('dgt_wrong_collection',JSON.stringify(w));
         }
       }catch(e){}
+      _cloudDone++; if(_cloudDone>=2&&typeof renderHome==='function')renderHome();
     };
     wx.send();
   }

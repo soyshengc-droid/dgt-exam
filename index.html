@@ -415,7 +415,7 @@ function getHistory() {
   try { return JSON.parse(localStorage.getItem('dgt_test_history') || '{}'); } catch(e) { return {}; }
 }
 function saveHistory(h) {
-  localStorage.setItem('dgt_test_history', JSON.stringify(h));
+  try { localStorage.setItem('dgt_test_history', JSON.stringify(h)); } catch(e) {}
   // Sync to cloud (fire and forget)
   var keys = Object.keys(h);
   if (keys.length === 0) return;
@@ -434,7 +434,7 @@ function getWrongCollection() {
   try { return JSON.parse(localStorage.getItem('dgt_wrong_collection') || '{}'); } catch(e) { return {}; }
 }
 function saveWrongCollection(w) {
-  localStorage.setItem('dgt_wrong_collection', JSON.stringify(w));
+  try { localStorage.setItem('dgt_wrong_collection', JSON.stringify(w)); } catch(e) {}
   // Sync last added to cloud (without base64 images)
   var keys = Object.keys(w);
   if (keys.length === 0) return;

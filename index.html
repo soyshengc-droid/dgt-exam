@@ -419,12 +419,12 @@ function saveHistory(h) {
     if (keys.length) {
       var lk = keys[keys.length-1], hd = h[lk];
       var xhr = new XMLHttpRequest();
-      xhr.open('POST', 'https://hcgzvomgdnmkwwuxixdv.supabase.co/rest/v1/test_history', true);
+      xhr.open('PATCH', 'https://hcgzvomgdnmkwwuxixdv.supabase.co/rest/v1/test_history?username=eq.sheng&test_num=eq.'+parseInt(lk), true);
       xhr.setRequestHeader('apikey', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZ3p2b21nZG5ta3d3dXhpeGR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MTg3MTYsImV4cCI6MjA5Nzk5NDcxNn0.JCvp6LxhJQZwYzpPQpECdHvCFBEeHrm50NxDdcI_jyo');
       xhr.setRequestHeader('Authorization', 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZ3p2b21nZG5ta3d3dXhpeGR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MTg3MTYsImV4cCI6MjA5Nzk5NDcxNn0.JCvp6LxhJQZwYzpPQpECdHvCFBEeHrm50NxDdcI_jyo');
       xhr.setRequestHeader('Content-Type', 'application/json');
-      xhr.setRequestHeader('Prefer', 'resolution=merge-duplicates');
-      xhr.send(JSON.stringify({username:'sheng', test_num:parseInt(lk), score:hd.score, answers:JSON.stringify(hd.answers||{}), fecha:hd.date||new Date().toISOString()}));
+      xhr.setRequestHeader('Prefer', 'return=minimal');
+      xhr.send(JSON.stringify({score:hd.score, answers:JSON.stringify(hd.answers||{}), fecha:hd.date||new Date().toISOString()}));
     }
   } catch(e) {}
 }
@@ -439,12 +439,12 @@ function saveWrongCollection(w) {
     Object.keys(w).forEach(function(k) {
       var q = w[k];
       var xhr = new XMLHttpRequest();
-      xhr.open('POST', 'https://hcgzvomgdnmkwwuxixdv.supabase.co/rest/v1/wrong_questions', true);
+      xhr.open('PATCH', 'https://hcgzvomgdnmkwwuxixdv.supabase.co/rest/v1/wrong_questions?username=eq.sheng&pregunta_id=eq.'+encodeURIComponent(q.pregunta_id), true);
       xhr.setRequestHeader('apikey', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZ3p2b21nZG5ta3d3dXhpeGR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MTg3MTYsImV4cCI6MjA5Nzk5NDcxNn0.JCvp6LxhJQZwYzpPQpECdHvCFBEeHrm50NxDdcI_jyo');
       xhr.setRequestHeader('Authorization', 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZ3p2b21nZG5ta3d3dXhpeGR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MTg3MTYsImV4cCI6MjA5Nzk5NDcxNn0.JCvp6LxhJQZwYzpPQpECdHvCFBEeHrm50NxDdcI_jyo');
       xhr.setRequestHeader('Content-Type', 'application/json');
-      xhr.setRequestHeader('Prefer', 'resolution=merge-duplicates');
-      xhr.send(JSON.stringify({username:'sheng', pregunta_id:q.pregunta_id, question_data:{
+      xhr.setRequestHeader('Prefer', 'return=minimal');
+      xhr.send(JSON.stringify({question_data:{
         pregunta_id:q.pregunta_id, pregunta:q.pregunta||'', opciones:q.opciones||[],
         respuesta_correcta:q.respuesta_correcta||'', tema:q.tema||'',
         referencia_libro:q.referencia_libro||'', tiene_imagen:q.tiene_imagen||false,

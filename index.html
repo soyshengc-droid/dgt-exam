@@ -881,18 +881,22 @@ function finishTest() {
   saveWrongCollection(wrongColl);
   updateWrongBadge();
   renderResults(correct, timeUsed, reviewItems);
-  // --- sync to cloud ---
+  // --- sync to cloud (DELETE old + POST new) ---
   (function(){
     var K='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZ3p2b21nZG5ta3d3dXhpeGR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MTg3MTYsImV4cCI6MjA5Nzk5NDcxNn0.JCvp6LxhJQZwYzpPQpECdHvCFBEeHrm50NxDdcI_jyo';
     var U='https://hcgzvomgdnmkwwuxixdv.supabase.co/rest/v1';
-    var H={'apikey':K,'Authorization':'Bearer '+K,'Content-Type':'application/json','Prefer':'return=minimal'};
+    var H={'apikey':K,'Authorization':'Bearer '+K,'Content-Type':'application/json'};
     var h=JSON.parse(localStorage.getItem('dgt_test_history')||'{}');
     var w=JSON.parse(localStorage.getItem('dgt_wrong_collection')||'{}');
     Object.keys(h).forEach(function(k){if(h[k].score===undefined)return;
-      fetch(U+'/test_history?username=eq.sheng&test_num=eq.'+k,{method:'PATCH',keepalive:true,headers:H,body:JSON.stringify({score:h[k].score,answers:JSON.stringify(h[k].answers||{}),fecha:h[k].date||new Date().toISOString()})});
+      var url=U+'/test_history?username=eq.sheng&test_num=eq.'+k;
+      var body=JSON.stringify({username:'sheng',test_num:parseInt(k),score:h[k].score,answers:JSON.stringify(h[k].answers||{}),fecha:h[k].date||new Date().toISOString()});
+      fetch(url,{method:'DELETE',headers:H}).then(function(){fetch(url,{method:'POST',headers:H,body:body});});
     });
     Object.keys(w).forEach(function(k){var q=w[k];
-      fetch(U+'/wrong_questions?username=eq.sheng&pregunta_id=eq.'+encodeURIComponent(q.pregunta_id),{method:'PATCH',keepalive:true,headers:H,body:JSON.stringify({question_data:{pregunta_id:q.pregunta_id,pregunta:q.pregunta||'',opciones:q.opciones||[],respuesta_correcta:q.respuesta_correcta||'',tema:q.tema||'',explicacion:q.explicacion||'',test_num:q.test_num||0,times_wrong:q.times_wrong||1}})});
+      var url=U+'/wrong_questions?username=eq.sheng&pregunta_id=eq.'+encodeURIComponent(q.pregunta_id);
+      var body=JSON.stringify({username:'sheng',pregunta_id:q.pregunta_id,question_data:{pregunta_id:q.pregunta_id,pregunta:q.pregunta||'',opciones:q.opciones||[],respuesta_correcta:q.respuesta_correcta||'',tema:q.tema||'',explicacion:q.explicacion||'',test_num:q.test_num||0,times_wrong:q.times_wrong||1}});
+      fetch(url,{method:'DELETE',headers:H}).then(function(){fetch(url,{method:'POST',headers:H,body:body});});
     });
   })();
   showPage('results');

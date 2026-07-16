@@ -515,8 +515,12 @@ function loadCloudData() {
   });
 }
 
-// Load cloud data on startup
-loadCloudData();
+// Load cloud data on startup and re-render after
+loadCloudData().then(function() {
+  if (currentPage === 'home') renderHome();
+  if (currentPage === 'wrong') renderWrongCollection();
+  updateWrongBadge();
+});
 
 // ==================== NAVIGATION ====================
 function showPage(page) {

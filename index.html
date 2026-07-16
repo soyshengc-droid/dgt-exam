@@ -411,12 +411,48 @@ const ANSWER_DEBOUNCE = 400;    // ms between answer clicks
 function getHistory() {
   try { return JSON.parse(localStorage.getItem('dgt_test_history') || '{}'); } catch(e) { return {}; }
 }
-function saveHistory(h) { localStorage.setItem('dgt_test_history', JSON.stringify(h)); }
+function saveHistory(h) {
+  localStorage.setItem('dgt_test_history', JSON.stringify(h));
+  // Upload to cloud
+  try {
+    var keys = Object.keys(h).filter(function(k){return h[k].score!==undefined});
+    if (keys.length) {
+      var lk = keys[keys.length-1], hd = h[lk];
+      var xhr = new XMLHttpRequest();
+      xhr.open('POST', 'https://hcgzvomgdnmkwwuxixdv.supabase.co/rest/v1/test_history', true);
+      xhr.setRequestHeader('apikey', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZ3p2b21nZG5ta3d3dXhpeGR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MTg3MTYsImV4cCI6MjA5Nzk5NDcxNn0.JCvp6LxhJQZwYzpPQpECdHvCFBEeHrm50NxDdcI_jyo');
+      xhr.setRequestHeader('Authorization', 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZ3p2b21nZG5ta3d3dXhpeGR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MTg3MTYsImV4cCI6MjA5Nzk5NDcxNn0.JCvp6LxhJQZwYzpPQpECdHvCFBEeHrm50NxDdcI_jyo');
+      xhr.setRequestHeader('Content-Type', 'application/json');
+      xhr.setRequestHeader('Prefer', 'resolution=merge-duplicates');
+      xhr.send(JSON.stringify({username:'sheng', test_num:parseInt(lk), score:hd.score, answers:JSON.stringify(hd.answers||{}), fecha:hd.date||new Date().toISOString()}));
+    }
+  } catch(e) {}
+}
 
 function getWrongCollection() {
   try { return JSON.parse(localStorage.getItem('dgt_wrong_collection') || '{}'); } catch(e) { return {}; }
 }
-function saveWrongCollection(w) { localStorage.setItem('dgt_wrong_collection', JSON.stringify(w)); }
+function saveWrongCollection(w) {
+  localStorage.setItem('dgt_wrong_collection', JSON.stringify(w));
+  // Upload all wrong questions to cloud
+  try {
+    Object.keys(w).forEach(function(k) {
+      var q = w[k];
+      var xhr = new XMLHttpRequest();
+      xhr.open('POST', 'https://hcgzvomgdnmkwwuxixdv.supabase.co/rest/v1/wrong_questions', true);
+      xhr.setRequestHeader('apikey', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZ3p2b21nZG5ta3d3dXhpeGR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MTg3MTYsImV4cCI6MjA5Nzk5NDcxNn0.JCvp6LxhJQZwYzpPQpECdHvCFBEeHrm50NxDdcI_jyo');
+      xhr.setRequestHeader('Authorization', 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZ3p2b21nZG5ta3d3dXhpeGR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MTg3MTYsImV4cCI6MjA5Nzk5NDcxNn0.JCvp6LxhJQZwYzpPQpECdHvCFBEeHrm50NxDdcI_jyo');
+      xhr.setRequestHeader('Content-Type', 'application/json');
+      xhr.setRequestHeader('Prefer', 'resolution=merge-duplicates');
+      xhr.send(JSON.stringify({username:'sheng', pregunta_id:q.pregunta_id, question_data:{
+        pregunta_id:q.pregunta_id, pregunta:q.pregunta||'', opciones:q.opciones||[],
+        respuesta_correcta:q.respuesta_correcta||'', tema:q.tema||'',
+        referencia_libro:q.referencia_libro||'', tiene_imagen:q.tiene_imagen||false,
+        explicacion:q.explicacion||'', test_num:q.test_num||0, times_wrong:q.times_wrong||1
+      }}));
+    });
+  } catch(e) {}
+}
 
 // ==================== NAVIGATION ====================
 function showPage(page) {
@@ -731,8 +767,6 @@ function selectAnswer(letter) {
       nextQuestion();
     }, 350);
   }
-  // Sync to cloud after each answer
-  syncToCloud();
 }
 
 function goToQuestion(index) {
@@ -1199,120 +1233,75 @@ updateWrongBadge();
 </script>
 
 <script>
-// ==================== CLOUD SYNC (simple: sync on every answer) ====================
+// ==================== PDF EXPORT + CLOUD LOAD ====================
 (function(){
-  var SUPABASE_URL = 'https://hcgzvomgdnmkwwuxixdv.supabase.co';
-  var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZ3p2b21nZG5ta3d3dXhpeGR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MTg3MTYsImV4cCI6MjA5Nzk5NDcxNn0.JCvp6LxhJQZwYzpPQpECdHvCFBEeHrm50NxDdcI_jyo';
-  var USER = 'sheng';
+  var SUPABASE_URL='https://hcgzvomgdnmkwwuxixdv.supabase.co';
+  var SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZ3p2b21nZG5ta3d3dXhpeGR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MTg3MTYsImV4cCI6MjA5Nzk5NDcxNn0.JCvp6LxhJQZwYzpPQpECdHvCFBEeHrm50NxDdcI_jyo';
 
-  window.syncToCloud = function() {
-    var h = getHistory();
-    var w = getWrongCollection();
-    // Sync last history entry
-    var hKeys = Object.keys(h).filter(function(k){return h[k].score!==undefined});
-    if (hKeys.length) {
-      var lastKey = hKeys[hKeys.length-1], hd = h[lastKey];
-      var xhr = new XMLHttpRequest();
-      xhr.open('POST', SUPABASE_URL + '/rest/v1/test_history', true);
-      xhr.setRequestHeader('apikey', SUPABASE_KEY);
-      xhr.setRequestHeader('Authorization', 'Bearer ' + SUPABASE_KEY);
-      xhr.setRequestHeader('Content-Type', 'application/json');
-      xhr.setRequestHeader('Prefer', 'resolution=merge-duplicates');
-      xhr.send(JSON.stringify({username:USER, test_num:parseInt(lastKey), score:hd.score, answers:JSON.stringify(hd.answers||{}), fecha:hd.date||new Date().toISOString()}));
-    }
-    // Sync ALL wrong questions
-    var wKeys = Object.keys(w);
-    wKeys.forEach(function(k) {
-      var q = w[k];
-      var xhr = new XMLHttpRequest();
-      xhr.open('POST', SUPABASE_URL + '/rest/v1/wrong_questions', true);
-      xhr.setRequestHeader('apikey', SUPABASE_KEY);
-      xhr.setRequestHeader('Authorization', 'Bearer ' + SUPABASE_KEY);
-      xhr.setRequestHeader('Content-Type', 'application/json');
-      xhr.setRequestHeader('Prefer', 'resolution=merge-duplicates');
-      xhr.send(JSON.stringify({username:USER, pregunta_id:q.pregunta_id, question_data:{
-        pregunta_id:q.pregunta_id, pregunta:q.pregunta||'', opciones:q.opciones||[],
-        respuesta_correcta:q.respuesta_correcta||'', tema:q.tema||'',
-        referencia_libro:q.referencia_libro||'', tiene_imagen:q.tiene_imagen||false,
-        explicacion:q.explicacion||'', test_num:q.test_num||0, times_wrong:q.times_wrong||1
-      }}));
-    });
-  };
-
-  // Load cloud data on page open (only once)
-  function loadCloud() {
-    var hx = new XMLHttpRequest();
-    hx.open('GET', SUPABASE_URL + '/rest/v1/test_history?username=eq.' + USER, true);
-    hx.setRequestHeader('apikey', SUPABASE_KEY);
-    hx.setRequestHeader('Authorization', 'Bearer ' + SUPABASE_KEY);
-    hx.onload = function() {
-      if (hx.status === 200) try {
-        var items = JSON.parse(hx.responseText);
-        if (Array.isArray(items) && items.length) {
-          var h = getHistory();
-          items.forEach(function(x){ h[x.test_num] = {score:x.score, answers:JSON.parse(x.answers||'{}'), date:x.fecha}; });
+  // Load cloud data on page open
+  function loadCloud(){
+    var hx=new XMLHttpRequest();
+    hx.open('GET',SUPABASE_URL+'/rest/v1/test_history?username=eq.sheng',true);
+    hx.setRequestHeader('apikey',SUPABASE_KEY);
+    hx.setRequestHeader('Authorization','Bearer '+SUPABASE_KEY);
+    hx.onload=function(){
+      if(hx.status===200)try{
+        var items=JSON.parse(hx.responseText);
+        if(Array.isArray(items)&&items.length){
+          var h=getHistory();
+          items.forEach(function(x){h[x.test_num]={score:x.score,answers:JSON.parse(x.answers||'{}'),date:x.fecha};});
           saveHistory(h);
         }
-      } catch(e) {}
+      }catch(e){}
     };
     hx.send();
-
-    var wx = new XMLHttpRequest();
-    wx.open('GET', SUPABASE_URL + '/rest/v1/wrong_questions?username=eq.' + USER, true);
-    wx.setRequestHeader('apikey', SUPABASE_KEY);
-    wx.setRequestHeader('Authorization', 'Bearer ' + SUPABASE_KEY);
-    wx.onload = function() {
-      if (wx.status === 200) try {
-        var items = JSON.parse(wx.responseText);
-        if (Array.isArray(items) && items.length) {
-          var w = getWrongCollection();
-          items.forEach(function(x){ w[x.pregunta_id] = x.question_data; });
+    var wx=new XMLHttpRequest();
+    wx.open('GET',SUPABASE_URL+'/rest/v1/wrong_questions?username=eq.sheng',true);
+    wx.setRequestHeader('apikey',SUPABASE_KEY);
+    wx.setRequestHeader('Authorization','Bearer '+SUPABASE_KEY);
+    wx.onload=function(){
+      if(wx.status===200)try{
+        var items=JSON.parse(wx.responseText);
+        if(Array.isArray(items)&&items.length){
+          var w=getWrongCollection();
+          items.forEach(function(x){w[x.pregunta_id]=x.question_data;});
           saveWrongCollection(w);
         }
-      } catch(e) {}
+      }catch(e){}
     };
     wx.send();
   }
   loadCloud();
 
-  // PDF Export button
-  var _origShowWrong = showWrongCollection;
-  showWrongCollection = function() {
-    _origShowWrong();
-    setTimeout(function() {
-      if (!document.getElementById('btn-export-pdf')) {
-        var btn = document.createElement('button');
-        btn.id = 'btn-export-pdf';
-        btn.className = 'btn btn-sm';
-        btn.style.cssText = 'background:var(--danger);color:#fff;font-size:14px;padding:8px 16px;margin-bottom:10px';
-        btn.textContent = '📄 Exportar PDF';
-        btn.onclick = exportPDF;
-        var container = document.querySelector('#page-wrong');
-        if (container) {
-          var title = container.querySelector('.page-title');
-          if (title) title.parentNode.insertBefore(btn, title.nextSibling);
-        }
-      }
-    }, 300);
-  };
+  // PDF Export
+  var _origShowWrong=showWrongCollection;
+  showWrongCollection=function(){_origShowWrong();setTimeout(function(){
+    if(!document.getElementById('btn-export-pdf')){
+      var btn=document.createElement('button');
+      btn.id='btn-export-pdf';btn.className='btn btn-sm';
+      btn.style.cssText='background:var(--danger);color:#fff;font-size:14px;padding:8px 16px;margin-bottom:10px';
+      btn.textContent='📄 Exportar PDF';btn.onclick=exportPDF;
+      var c=document.querySelector('#page-wrong');
+      if(c){var t=c.querySelector('.page-title');if(t)t.parentNode.insertBefore(btn,t.nextSibling);}
+    }
+  },300);};
 
-  window.exportPDF = function() {
-    var w = getWrongCollection();
-    var entries = Object.values(w);
-    if (!entries.length) { alert('No hay fallos'); return; }
-    var letters = ['A','B','C','D'];
-    var h = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Fallos DGT</title>' +
-      '<style>body{font-family:Arial;max-width:800px;margin:20px auto}h1{border-bottom:2px solid #000}' +
-      '.q{margin:16px 0;padding:14px;border:1px solid #ccc;page-break-inside:avoid}' +
-      '.q img{max-width:100%;max-height:200px}.correct{background:#d4edda;border:2px solid #28a745;font-weight:bold}' +
-      '.exp{font-style:italic;color:#555;padding:8px;background:#f8f8fa}' +
+  window.exportPDF=function(){
+    var w=getWrongCollection();var entries=Object.values(w);
+    if(!entries.length){alert('No hay fallos');return;}
+    var L=['A','B','C','D'];
+    var h='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Fallos DGT</title>'+
+      '<style>body{font-family:Arial;max-width:800px;margin:20px auto}h1{border-bottom:2px solid #000}'+
+      '.q{margin:16px 0;padding:14px;border:1px solid #ccc;page-break-inside:avoid}'+
+      '.q img{max-width:100%;max-height:200px}.correct{background:#d4edda;border:2px solid #28a745;font-weight:bold}'+
+      '.exp{font-style:italic;color:#555;padding:8px;background:#f8f8fa}'+
       '@media print{body{margin:0}}</style></head><body><h1>Fallos DGT — '+entries.length+' preguntas</h1>';
     entries.forEach(function(wq,i){
       var opts=(wq.opciones||[]).map(function(o){return typeof o==='string'?o:(o.texto||'');});
-      var ans=wq.respuesta_correcta||''; var ai=letters.indexOf(ans);
+      var ans=wq.respuesta_correcta||'';var ai=L.indexOf(ans);
       h+='<div class="q"><h3>'+(i+1)+'. '+wq.pregunta+'</h3>';
       if(wq.imagen_base64&&wq.imagen_base64.length>100)h+='<img src="data:image/jpeg;base64,'+wq.imagen_base64+'">';
-      h+='<div>'+opts.map(function(o,j){return '<div class="'+(j===ai?'correct ':'')+'opt">'+letters[j]+'. '+o+(j===ai?' ✅':'')+'</div>';}).join('')+'</div>';
+      h+='<div>'+opts.map(function(o,j){return '<div class="'+(j===ai?'correct ':'')+'opt">'+L[j]+'. '+o+(j===ai?' ✅':'')+'</div>';}).join('')+'</div>';
       if(wq.explicacion)h+='<div class="exp">💡 '+wq.explicacion+'</div>';
       h+='</div>';
     });

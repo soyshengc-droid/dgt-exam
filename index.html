@@ -3,8 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tests DGT Permiso B</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" async onload="initSupabase()"></script>
+<title>Tests DGT Permiso B - [134] Examen</title>
 <style>
 /* ========== RESET & BASE ========== */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -225,7 +224,6 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--
     <button class="btn btn-outline btn-sm" onclick="showPage('home')">📋 Tests</button>
     <button class="btn btn-outline btn-sm" onclick="showPage('stats')">📊 Estadísticas</button>
     <button class="btn btn-sm" id="btn-fallos-header" style="background:#fef3c7;color:#92400e;border:2px solid #f59e0b" onclick="showWrongCollection()">📝 Fallos <span id="wrong-count-h">0</span></button>
-    <button class="btn btn-outline btn-sm" onclick="syncAllToCloud()" title="Subir todos los datos a la nube" style="font-size:11px">☁️ Sincronizar</button>
   </div>
 </header>
 
@@ -418,33 +416,6 @@ function getWrongCollection() {
   try { return JSON.parse(localStorage.getItem('dgt_wrong_collection') || '{}'); } catch(e) { return {}; }
 }
 function saveWrongCollection(w) { localStorage.setItem('dgt_wrong_collection', JSON.stringify(w)); }
-
-var supabase = null;
-function initSupabase(){
-  try {
-    if (window.supabase) {
-      supabase = window.supabase.createClient(
-        'https://hcgzvomgdnmkwwuxixdv.supabase.co',
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZ3p2b21nZG5ta3d3dXhpeGR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MTg3MTYsImV4cCI6MjA5Nzk5NDcxNn0.JCvp6LxhJQZwYzpPQpECdHvCFBEeHrm50NxDdcI_jyo'
-      );
-    }
-  } catch(e) { supabase = null; }
-}
-// Also try immediately in case script already loaded
-if (window.supabase) initSupabase();
-
-function syncNow() {
-  if (typeof supabase === 'undefined') return;
-  var h=getHistory(), w=getWrongCollection();
-  Object.keys(h).forEach(function(k){
-    if(h[k].score===undefined)return;
-    supabase.from('test_history').upsert({username:'sheng', test_num:parseInt(k), score:h[k].score, answers:JSON.stringify(h[k].answers||{}), fecha:h[k].date||new Date().toISOString()}, {onConflict:'username,test_num'});
-  });
-  Object.keys(w).forEach(function(k){
-    var q=w[k];
-    supabase.from('wrong_questions').upsert({username:'sheng', pregunta_id:q.pregunta_id, question_data:{pregunta_id:q.pregunta_id, pregunta:q.pregunta||'', opciones:q.opciones||[], respuesta_correcta:q.respuesta_correcta||'', tema:q.tema||'', referencia_libro:q.referencia_libro||'', tiene_imagen:q.tiene_imagen||false, explicacion:q.explicacion||'', test_num:q.test_num||0, times_wrong:q.times_wrong||1}}, {onConflict:'username,pregunta_id'});
-  });
-}
 
 // ==================== NAVIGATION ====================
 function showPage(page) {
@@ -910,8 +881,20 @@ function finishTest() {
   saveWrongCollection(wrongColl);
   updateWrongBadge();
   renderResults(correct, timeUsed, reviewItems);
-  // Sync to cloud
-  syncNow();
+  // --- sync to cloud ---
+  (function(){
+    var K='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZ3p2b21nZG5ta3d3dXhpeGR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MTg3MTYsImV4cCI6MjA5Nzk5NDcxNn0.JCvp6LxhJQZwYzpPQpECdHvCFBEeHrm50NxDdcI_jyo';
+    var U='https://hcgzvomgdnmkwwuxixdv.supabase.co/rest/v1';
+    var H={'apikey':K,'Authorization':'Bearer '+K,'Content-Type':'application/json','Prefer':'return=minimal'};
+    var h=JSON.parse(localStorage.getItem('dgt_test_history')||'{}');
+    var w=JSON.parse(localStorage.getItem('dgt_wrong_collection')||'{}');
+    Object.keys(h).forEach(function(k){if(h[k].score===undefined)return;
+      fetch(U+'/test_history?username=eq.sheng&test_num=eq.'+k,{method:'PATCH',keepalive:true,headers:H,body:JSON.stringify({score:h[k].score,answers:JSON.stringify(h[k].answers||{}),fecha:h[k].date||new Date().toISOString()})});
+    });
+    Object.keys(w).forEach(function(k){var q=w[k];
+      fetch(U+'/wrong_questions?username=eq.sheng&pregunta_id=eq.'+encodeURIComponent(q.pregunta_id),{method:'PATCH',keepalive:true,headers:H,body:JSON.stringify({question_data:{pregunta_id:q.pregunta_id,pregunta:q.pregunta||'',opciones:q.opciones||[],respuesta_correcta:q.respuesta_correcta||'',tema:q.tema||'',explicacion:q.explicacion||'',test_num:q.test_num||0,times_wrong:q.times_wrong||1}})});
+    });
+  })();
   showPage('results');
 }
 
@@ -1227,91 +1210,49 @@ updateWrongBadge();
 </script>
 
 <script>
-// ==================== PDF EXPORT + CLOUD LOAD ====================
 (function(){
-  var SUPABASE_URL='https://hcgzvomgdnmkwwuxixdv.supabase.co';
-  var SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZ3p2b21nZG5ta3d3dXhpeGR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MTg3MTYsImV4cCI6MjA5Nzk5NDcxNn0.JCvp6LxhJQZwYzpPQpECdHvCFBEeHrm50NxDdcI_jyo';
+var K='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZ3p2b21nZG5ta3d3dXhpeGR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MTg3MTYsImV4cCI6MjA5Nzk5NDcxNn0.JCvp6LxhJQZwYzpPQpECdHvCFBEeHrm50NxDdcI_jyo';
+var U='https://hcgzvomgdnmkwwuxixdv.supabase.co/rest/v1';
+// Load cloud on page open
+var loaded=0;
+function maybeRefresh(){loaded++;if(loaded>=2&&typeof renderHome==='function')renderHome();}
+fetch(U+'/test_history?username=eq.sheng',{headers:{'apikey':K,'Authorization':'Bearer '+K}}).then(function(r){return r.json();}).then(function(d){
+  if(Array.isArray(d)&&d.length){var h=JSON.parse(localStorage.getItem('dgt_test_history')||'{}');d.forEach(function(x){h[x.test_num]={score:x.score,answers:JSON.parse(x.answers||'{}'),date:x.fecha};});localStorage.setItem('dgt_test_history',JSON.stringify(h));}
+  maybeRefresh();
+}).catch(function(){maybeRefresh();});
+fetch(U+'/wrong_questions?username=eq.sheng',{headers:{'apikey':K,'Authorization':'Bearer '+K}}).then(function(r){return r.json();}).then(function(d){
+  if(Array.isArray(d)&&d.length){var w=JSON.parse(localStorage.getItem('dgt_wrong_collection')||'{}');d.forEach(function(x){w[x.pregunta_id]=x.question_data;});localStorage.setItem('dgt_wrong_collection',JSON.stringify(w));}
+  maybeRefresh();
+}).catch(function(){maybeRefresh();});
 
-  // Load cloud data on page open (write directly, no upload loop)
-  var _cloudDone=0;
-  function loadCloud(){
-    _cloudDone=0;
-    var hx=new XMLHttpRequest();
-    hx.open('GET',SUPABASE_URL+'/rest/v1/test_history?username=eq.sheng',true);
-    hx.setRequestHeader('apikey',SUPABASE_KEY);
-    hx.setRequestHeader('Authorization','Bearer '+SUPABASE_KEY);
-    hx.onload=function(){
-      if(hx.status===200)try{
-        var items=JSON.parse(hx.responseText);
-        if(Array.isArray(items)&&items.length){
-          var h=getHistory(); var changed=false;
-          items.forEach(function(x){
-            if(!h[x.test_num]||(h[x.test_num].score||0)<(x.score||0)){
-              h[x.test_num]={score:x.score,answers:JSON.parse(x.answers||'{}'),date:x.fecha};
-              changed=true;
-            }
-          });
-          if(changed) localStorage.setItem('dgt_test_history',JSON.stringify(h));
-        }
-      }catch(e){}
-      _cloudDone++; if(_cloudDone>=2&&typeof renderHome==='function')renderHome();
-    };
-    hx.send();
-    var wx=new XMLHttpRequest();
-    wx.open('GET',SUPABASE_URL+'/rest/v1/wrong_questions?username=eq.sheng',true);
-    wx.setRequestHeader('apikey',SUPABASE_KEY);
-    wx.setRequestHeader('Authorization','Bearer '+SUPABASE_KEY);
-    wx.onload=function(){
-      if(wx.status===200)try{
-        var items=JSON.parse(wx.responseText);
-        if(Array.isArray(items)&&items.length){
-          var w=getWrongCollection(); var changed=false;
-          items.forEach(function(x){if(!w[x.pregunta_id]){w[x.pregunta_id]=x.question_data;changed=true;}});
-          if(changed) localStorage.setItem('dgt_wrong_collection',JSON.stringify(w));
-        }
-      }catch(e){}
-      _cloudDone++; if(_cloudDone>=2&&typeof renderHome==='function')renderHome();
-    };
-    wx.send();
+// PDF Export
+var _osw=showWrongCollection;
+showWrongCollection=function(){_osw();setTimeout(function(){
+  if(!document.getElementById('btn-export-pdf')){
+    var b=document.createElement('button');b.id='btn-export-pdf';b.className='btn btn-sm';
+    b.style.cssText='background:var(--danger);color:#fff;font-size:14px;padding:8px 16px;margin-bottom:10px';
+    b.textContent='📄 Exportar PDF';b.onclick=exportPDF;
+    var c=document.querySelector('#page-wrong');if(c){var t=c.querySelector('.page-title');if(t)t.parentNode.insertBefore(b,t.nextSibling);}
   }
-  loadCloud();
-
-  // PDF Export
-  var _origShowWrong=showWrongCollection;
-  showWrongCollection=function(){_origShowWrong();setTimeout(function(){
-    if(!document.getElementById('btn-export-pdf')){
-      var btn=document.createElement('button');
-      btn.id='btn-export-pdf';btn.className='btn btn-sm';
-      btn.style.cssText='background:var(--danger);color:#fff;font-size:14px;padding:8px 16px;margin-bottom:10px';
-      btn.textContent='📄 Exportar PDF';btn.onclick=exportPDF;
-      var c=document.querySelector('#page-wrong');
-      if(c){var t=c.querySelector('.page-title');if(t)t.parentNode.insertBefore(btn,t.nextSibling);}
-    }
-  },300);};
-
-  window.exportPDF=function(){
-    var w=getWrongCollection();var entries=Object.values(w);
-    if(!entries.length){alert('No hay fallos');return;}
-    var L=['A','B','C','D'];
-    var h='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Fallos DGT</title>'+
-      '<style>body{font-family:Arial;max-width:800px;margin:20px auto}h1{border-bottom:2px solid #000}'+
-      '.q{margin:16px 0;padding:14px;border:1px solid #ccc;page-break-inside:avoid}'+
-      '.q img{max-width:100%;max-height:200px}.correct{background:#d4edda;border:2px solid #28a745;font-weight:bold}'+
-      '.exp{font-style:italic;color:#555;padding:8px;background:#f8f8fa}'+
-      '@media print{body{margin:0}}</style></head><body><h1>Fallos DGT — '+entries.length+' preguntas</h1>';
-    entries.forEach(function(wq,i){
-      var opts=(wq.opciones||[]).map(function(o){return typeof o==='string'?o:(o.texto||'');});
-      var ans=wq.respuesta_correcta||'';var ai=L.indexOf(ans);
-      h+='<div class="q"><h3>'+(i+1)+'. '+wq.pregunta+'</h3>';
-      if(wq.imagen_base64&&wq.imagen_base64.length>100)h+='<img src="data:image/jpeg;base64,'+wq.imagen_base64+'">';
-      h+='<div>'+opts.map(function(o,j){return '<div class="'+(j===ai?'correct ':'')+'opt">'+L[j]+'. '+o+(j===ai?' ✅':'')+'</div>';}).join('')+'</div>';
-      if(wq.explicacion)h+='<div class="exp">💡 '+wq.explicacion+'</div>';
-      h+='</div>';
-    });
-    h+='</body></html>';
-    var win=window.open('','_blank');win.document.write(h);win.document.close();
-    setTimeout(function(){win.print();},600);
-  };
+},300);};
+window.exportPDF=function(){
+  var w=JSON.parse(localStorage.getItem('dgt_wrong_collection')||'{}');var E=Object.values(w);
+  if(!E.length){alert('No hay fallos');return;}
+  var L=['A','B','C','D'],h='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Fallos DGT</title>'+
+    '<style>body{font-family:Arial;max-width:800px;margin:20px auto}h1{border-bottom:2px solid #000}'+
+    '.q{margin:16px 0;padding:14px;border:1px solid #ccc;page-break-inside:avoid}.q img{max-width:100%;max-height:200px}'+
+    '.correct{background:#d4edda;border:2px solid #28a745;font-weight:bold}.exp{font-style:italic;color:#555;padding:8px;background:#f8f8fa}'+
+    '@media print{body{margin:0}}</style></head><body><h1>Fallos DGT — '+E.length+' preguntas</h1>';
+  E.forEach(function(q,i){var opts=(q.opciones||[]).map(function(o){return typeof o==='string'?o:(o.texto||'');});
+    var a=q.respuesta_correcta||'',ai=L.indexOf(a);
+    h+='<div class="q"><h3>'+(i+1)+'. '+q.pregunta+'</h3>';
+    if(q.imagen_base64&&q.imagen_base64.length>100)h+='<img src="data:image/jpeg;base64,'+q.imagen_base64+'">';
+    h+='<div>'+opts.map(function(o,j){return '<div class="opt'+(j===ai?' correct':'')+'">'+L[j]+'. '+o+(j===ai?' ✅':'')+'</div>';}).join('')+'</div>';
+    if(q.explicacion)h+='<div class="exp">💡 '+q.explicacion+'</div>';
+    h+='</div>';
+  });h+='</body></html>';
+  var win=window.open('','_blank');win.document.write(h);win.document.close();setTimeout(function(){win.print();},600);
+};
 })();
 </script>
 

@@ -411,6 +411,17 @@ const SUPABASE_URL = 'https://hcgzvomgdnmkwwuxixdv.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZ3p2b21nZG5ta3d3dXhpeGR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MTg3MTYsImV4cCI6MjA5Nzk5NDcxNn0.JCvp6LxhJQZwYzpPQpECdHvCFBEeHrm50NxDdcI_jyo';
 const CLOUD_USER = 'sheng';
 
+// Auto-cleanup: clear localStorage if bloated
+(function(){
+  try {
+    var w = localStorage.getItem('dgt_wrong_collection');
+    if (w && w.length > 3000000) {
+      localStorage.removeItem('dgt_wrong_collection');
+      console.log('⚠️ Datos locales limpiados (demasiado grandes). Se recargarán de la nube.');
+    }
+  } catch(e) { localStorage.clear(); }
+})();
+
 function getHistory() {
   try { return JSON.parse(localStorage.getItem('dgt_test_history') || '{}'); } catch(e) { return {}; }
 }

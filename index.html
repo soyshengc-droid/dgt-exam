@@ -1307,18 +1307,28 @@ window.exportPDF=function(){
     var win=window.open('','_blank');win.document.write(h);win.document.close();setTimeout(function(){win.print();},600);
     if(btn){btn.textContent='📄 Exportar PDF';btn.disabled=false;}
   }
-  var need=E.filter(function(q){return q.tiene_imagen && !(q.imagen_base64&&q.imagen_base64.length>100) && q.test_num;});
-  if(!need.length){ build(); return; }
-  if(btn){btn.textContent='⏳ Cargando imágenes…';btn.disabled=true;}
-  var done=0;
-  need.forEach(function(q){
-    getWrongImageDataURI(q, function(src){
-      if(src){ q.imagen_base64 = src.split('base64,')[1]; }
-      done++;
-      if(btn)btn.textContent='⏳ Cargando imágenes… ('+done+'/'+need.length+')';
-      if(done>=need.length){ build(); }
+  function run(){
+    var need=E.filter(function(q){return q.tiene_imagen && !(q.imagen_base64&&q.imagen_base64.length>100) && q.test_num;});
+    if(!need.length){ build(); return; }
+    if(btn){btn.textContent='⏳ Cargando imágenes…';btn.disabled=true;}
+    var done=0;
+    need.forEach(function(q){
+      getWrongImageDataURI(q, function(src){
+        if(src){ q.imagen_base64 = src.split('base64,')[1]; }
+        done++;
+        if(btn)btn.textContent='⏳ Cargando imágenes… ('+done+'/'+need.length+')';
+        if(done>=need.length){ build(); }
+      });
     });
-  });
+  }
+  // Refresh test_num + tiene_imagen from cloud so stale local data still exports images
+  if(btn){btn.textContent='⏳ Sincronizando…';btn.disabled=true;}
+  fetch(U+'/wrong_questions?username=eq.sheng',{headers:{'apikey':K,'Authorization':'Bearer '+K}}).then(function(r){return r.json();}).then(function(d){
+    if(Array.isArray(d)){var map={};d.forEach(function(x){map[String(x.pregunta_id)]=x.question_data;});
+      E.forEach(function(q){var c=map[String(q.pregunta_id)];if(c){q.test_num=c.test_num;q.tiene_imagen=!!c.tiene_imagen;}});
+    }
+    run();
+  }).catch(function(){run();});
 };
 })();
 </script>

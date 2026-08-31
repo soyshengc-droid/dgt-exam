@@ -703,8 +703,9 @@ function getImageSrc(q) {
 // ==================== WRONG IMAGE LOADER (from test files) ====================
 // Images are NOT stored in localStorage (5MB quota). They live in tests/test_XXX.json
 // (deployed on GitHub Pages). Load on demand with in-memory caching.
-var _testFileCache = {};   // test_num -> questions array
-var _imgCache = {};        // pregunta_id -> base64 string
+var _testFileCache = {};    // test_num -> questions array
+var _testFilePending = {};  // test_num -> Promise (dedupe concurrent fetches)
+var _imgCache = {};         // pregunta_id -> base64 string
 
 function getWrongImageDataURI(wq, cb) {
   var pid = String(wq.pregunta_id);
@@ -712,8 +713,7 @@ function getWrongImageDataURI(wq, cb) {
   if (_imgCache[pid]) { cb('data:image/jpeg;base64,' + _imgCache[pid]); return; }
   var tn = parseInt(wq.test_num, 10);
   if (!tn) { cb(null); return; }
-  var fname = 'tests/test_' + String(tn).padStart(3, '0') + '.json';
-  function extract(arr) {
+  function resolve(arr) {
     var q = arr.find(function(x){ return String(x.pregunta_id) === pid; });
     if (q && q.imagen_base64) {
       _imgCache[pid] = q.imagen_base64;
@@ -722,11 +722,17 @@ function getWrongImageDataURI(wq, cb) {
       cb(null);
     }
   }
-  if (_testFileCache[tn]) { extract(_testFileCache[tn]); return; }
-  fetch(fname).then(function(r){ return r.json(); }).then(function(arr){
-    _testFileCache[tn] = arr;
-    extract(arr);
-  }).catch(function(){ cb(null); });
+  if (_testFileCache[tn]) { resolve(_testFileCache[tn]); return; }
+  if (!_testFilePending[tn]) {
+    var fname = 'tests/test_' + String(tn).padStart(3, '0') + '.json';
+    _testFilePending[tn] = fetch(fname).then(function(r){ return r.json(); }).then(function(arr){
+      _testFileCache[tn] = arr;
+      return arr;
+    }).catch(function(){ return null; });
+  }
+  _testFilePending[tn].then(function(arr){
+    if (arr) resolve(arr); else cb(null);
+  });
 }
 
 function escapeHtml(str) {

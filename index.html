@@ -554,8 +554,9 @@ function startRepasoMode() {
     pregunta: wq.pregunta,
     opciones: wq.opciones,
     respuesta_correcta: wq.respuesta_correcta,
-    tiene_imagen: wq.tiene_imagen,
-    imagen_base64: wq.tiene_imagen ? wq.imagen_base64 : null,
+    tiene_imagen: !!wq.tiene_imagen,
+    imagen_base64: null,
+    test_num: wq.test_num,
     tema: wq.tema,
     referencia_libro: wq.referencia_libro,
     explicacion: null,
@@ -587,6 +588,17 @@ function startRepasoMode() {
   renderQuestionNav();
   renderQuestion();
   startTimer();
+  // Load images from test files asynchronously (images are not stored locally)
+  selected.forEach(function(wq, idx){
+    if (!wq.tiene_imagen) return;
+    getWrongImageDataURI(wq, function(src){
+      if (src && currentQuestions[idx]) {
+        currentQuestions[idx].imagen_base64 = src.split('base64,')[1];
+        currentQuestions[idx].tiene_imagen = true;
+        if (idx === currentQIndex) renderQuestion();
+      }
+    });
+  });
 }
 
 function renderQuestionNav() {
@@ -686,6 +698,35 @@ function getImageSrc(q) {
     return `data:image/jpeg;base64,${q.imagen_base64}`;
   }
   return null;
+}
+
+// ==================== WRONG IMAGE LOADER (from test files) ====================
+// Images are NOT stored in localStorage (5MB quota). They live in tests/test_XXX.json
+// (deployed on GitHub Pages). Load on demand with in-memory caching.
+var _testFileCache = {};   // test_num -> questions array
+var _imgCache = {};        // pregunta_id -> base64 string
+
+function getWrongImageDataURI(wq, cb) {
+  var pid = String(wq.pregunta_id);
+  if (wq.imagen_base64) { cb('data:image/jpeg;base64,' + wq.imagen_base64); return; }
+  if (_imgCache[pid]) { cb('data:image/jpeg;base64,' + _imgCache[pid]); return; }
+  var tn = parseInt(wq.test_num, 10);
+  if (!tn) { cb(null); return; }
+  var fname = 'tests/test_' + String(tn).padStart(3, '0') + '.json';
+  function extract(arr) {
+    var q = arr.find(function(x){ return String(x.pregunta_id) === pid; });
+    if (q && q.imagen_base64) {
+      _imgCache[pid] = q.imagen_base64;
+      cb('data:image/jpeg;base64,' + q.imagen_base64);
+    } else {
+      cb(null);
+    }
+  }
+  if (_testFileCache[tn]) { extract(_testFileCache[tn]); return; }
+  fetch(fname).then(function(r){ return r.json(); }).then(function(arr){
+    _testFileCache[tn] = arr;
+    extract(arr);
+  }).catch(function(){ cb(null); });
 }
 
 function escapeHtml(str) {
@@ -868,8 +909,9 @@ function finishTest() {
           respuesta_correcta: wq.respuesta_correcta,
           tema: wq.tema,
           referencia_libro: wq.referencia_libro,
-          tiene_imagen: wq.tiene_imagen,
-          imagen_base64: wq.tiene_imagen ? wq.imagen_base64 : null,
+          tiene_imagen: !!wq.tiene_imagen,
+          imagen_base64: null,
+          test_num: wq.test_num,
           times_wrong: 0,
           last_wrong: null,
         };
@@ -895,7 +937,7 @@ function finishTest() {
     });
     Object.keys(w).forEach(function(k){var q=w[k];
       var url=U+'/wrong_questions?username=eq.sheng&pregunta_id=eq.'+encodeURIComponent(q.pregunta_id);
-      var body=JSON.stringify({username:'sheng',pregunta_id:q.pregunta_id,question_data:{pregunta_id:q.pregunta_id,pregunta:q.pregunta||'',opciones:q.opciones||[],respuesta_correcta:q.respuesta_correcta||'',tema:q.tema||'',explicacion:q.explicacion||'',test_num:q.test_num||0,times_wrong:q.times_wrong||1}});
+      var body=JSON.stringify({username:'sheng',pregunta_id:q.pregunta_id,question_data:{pregunta_id:q.pregunta_id,pregunta:q.pregunta||'',opciones:q.opciones||[],respuesta_correcta:q.respuesta_correcta||'',tema:q.tema||'',explicacion:q.explicacion||'',test_num:q.test_num||0,tiene_imagen:!!q.tiene_imagen,times_wrong:q.times_wrong||1}});
       fetch(url,{method:'DELETE',headers:H}).then(function(){fetch(url,{method:'POST',headers:H,body:body});});
     });
   })();
@@ -1042,10 +1084,7 @@ function reviewWrongQuestion(preguntaId) {
 
   document.getElementById('modal-title').textContent = 'Revisar Pregunta Fallada';
   let html = `<p style="font-weight:600;margin-bottom:12px">${wq.pregunta}</p>`;
-  const wsSrc = getImageSrc(wq);
-  if (wsSrc) {
-    html += `<div class="modal-image"><img src="${wsSrc}" alt="Imagen" onerror="this.style.display='none'"></div>`;
-  }
+  html += `<div class="modal-image" id="wrong-modal-img" style="display:none"><img id="wrong-modal-img-el" alt="Imagen" onerror="this.style.display='none'"></div>`;
   html += `<div style="display:flex;flex-direction:column;gap:8px">`;
   wq.opciones.forEach(opt => {
     const isCorrect = opt.letra === wq.respuesta_correcta;
@@ -1063,6 +1102,13 @@ function reviewWrongQuestion(preguntaId) {
 
   document.getElementById('modal-body').innerHTML = html;
   document.getElementById('modal-overlay').classList.add('show');
+
+  // Load image on demand
+  getWrongImageDataURI(wq, function(src){
+    var el = document.getElementById('wrong-modal-img-el');
+    var wrap = document.getElementById('wrong-modal-img');
+    if (src && el && wrap) { el.src = src; wrap.style.display = 'block'; }
+  });
 }
 
 function removeFromWrong(preguntaId) {
@@ -1242,20 +1288,37 @@ showWrongCollection=function(){_osw();setTimeout(function(){
 window.exportPDF=function(){
   var w=JSON.parse(localStorage.getItem('dgt_wrong_collection')||'{}');var E=Object.values(w);
   if(!E.length){alert('No hay fallos');return;}
-  var L=['A','B','C','D'],h='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Fallos DGT</title>'+
-    '<style>body{font-family:Arial;max-width:800px;margin:20px auto}h1{border-bottom:2px solid #000}'+
-    '.q{margin:16px 0;padding:14px;border:1px solid #ccc;page-break-inside:avoid}.q img{max-width:100%;max-height:200px}'+
-    '.correct{background:#d4edda;border:2px solid #28a745;font-weight:bold}.exp{font-style:italic;color:#555;padding:8px;background:#f8f8fa}'+
-    '@media print{body{margin:0}}</style></head><body><h1>Fallos DGT — '+E.length+' preguntas</h1>';
-  E.forEach(function(q,i){var opts=(q.opciones||[]).map(function(o){return typeof o==='string'?o:(o.texto||'');});
-    var a=q.respuesta_correcta||'',ai=L.indexOf(a);
-    h+='<div class="q"><h3>'+(i+1)+'. '+q.pregunta+'</h3>';
-    if(q.imagen_base64&&q.imagen_base64.length>100)h+='<img src="data:image/jpeg;base64,'+q.imagen_base64+'">';
-    h+='<div>'+opts.map(function(o,j){return '<div class="opt'+(j===ai?' correct':'')+'">'+L[j]+'. '+o+(j===ai?' ✅':'')+'</div>';}).join('')+'</div>';
-    if(q.explicacion)h+='<div class="exp">💡 '+q.explicacion+'</div>';
-    h+='</div>';
-  });h+='</body></html>';
-  var win=window.open('','_blank');win.document.write(h);win.document.close();setTimeout(function(){win.print();},600);
+  var btn=document.getElementById('btn-export-pdf');
+  var L=['A','B','C','D'];
+  function build(){
+    var h='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Fallos DGT</title>'+
+      '<style>body{font-family:Arial;max-width:800px;margin:20px auto}h1{border-bottom:2px solid #000}'+
+      '.q{margin:16px 0;padding:14px;border:1px solid #ccc;page-break-inside:avoid}.q img{max-width:100%;max-height:200px}'+
+      '.correct{background:#d4edda;border:2px solid #28a745;font-weight:bold}.exp{font-style:italic;color:#555;padding:8px;background:#f8f8fa}'+
+      '@media print{body{margin:0}}</style></head><body><h1>Fallos DGT — '+E.length+' preguntas</h1>';
+    E.forEach(function(q,i){var opts=(q.opciones||[]).map(function(o){return typeof o==='string'?o:(o.texto||'');});
+      var a=q.respuesta_correcta||'',ai=L.indexOf(a);
+      h+='<div class="q"><h3>'+(i+1)+'. '+q.pregunta+'</h3>';
+      if(q.imagen_base64&&q.imagen_base64.length>100)h+='<img src="data:image/jpeg;base64,'+q.imagen_base64+'">';
+      h+='<div>'+opts.map(function(o,j){return '<div class="opt'+(j===ai?' correct':'')+'">'+L[j]+'. '+o+(j===ai?' ✅':'')+'</div>';}).join('')+'</div>';
+      if(q.explicacion)h+='<div class="exp">💡 '+q.explicacion+'</div>';
+      h+='</div>';
+    });h+='</body></html>';
+    var win=window.open('','_blank');win.document.write(h);win.document.close();setTimeout(function(){win.print();},600);
+    if(btn){btn.textContent='📄 Exportar PDF';btn.disabled=false;}
+  }
+  var need=E.filter(function(q){return q.tiene_imagen && !(q.imagen_base64&&q.imagen_base64.length>100) && q.test_num;});
+  if(!need.length){ build(); return; }
+  if(btn){btn.textContent='⏳ Cargando imágenes…';btn.disabled=true;}
+  var done=0;
+  need.forEach(function(q){
+    getWrongImageDataURI(q, function(src){
+      if(src){ q.imagen_base64 = src.split('base64,')[1]; }
+      done++;
+      if(btn)btn.textContent='⏳ Cargando imágenes… ('+done+'/'+need.length+')';
+      if(done>=need.length){ build(); }
+    });
+  });
 };
 })();
 </script>
